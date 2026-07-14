@@ -1,0 +1,35 @@
+{
+  "id": "wrong-patterns-33",
+  "slug": "the-prop-drill",
+  "title": "The prop drill",
+  "category": "wrong-patterns",
+  "difficulty": "medium",
+  "timeMinutes": 4,
+  "framework": "React",
+  "context": "A developer asked an AI assistant to make the current logged-in user's theme preference available to a deeply nested button component. The suggested code works, but every component between the top and the button now has to accept and forward a prop it never actually uses.",
+  "code": {
+    "language": "jsx",
+    "filename": "App.jsx",
+    "snippet": "function App({ theme }) {\n  return <Dashboard theme={theme} />;\n}\nfunction Dashboard({ theme }) {\n  return <Sidebar theme={theme} />;\n}\nfunction Sidebar({ theme }) {\n  return <UserMenu theme={theme} />;\n}\nfunction UserMenu({ theme }) {\n  return <ThemeToggleButton theme={theme} />;\n}"
+  },
+  "question": "What's the actual maintainability problem with this pattern, beyond it looking repetitive?",
+  "options": [
+    "Dashboard, Sidebar, and UserMenu each have to know about and forward a prop they never use themselves, coupling every intermediate component to a concern only the button actually cares about.",
+    "Passing the same prop name through multiple components causes React to throw a duplicate-prop warning.",
+    "Props can only be forwarded through a maximum of two component levels in React.",
+    "theme becomes stale after the second level because React only re-renders one level of prop changes."
+  ],
+  "correctAnswerIndex": 0,
+  "explanation": {
+    "theBug": "theme has nothing to do with Dashboard, Sidebar, or UserMenu's own responsibilities — they're just pass-through pipes for a value only the deeply nested ThemeToggleButton actually needs. Every intermediate component's props signature is now coupled to a concern it doesn't own: adding a new consumer of theme, or renaming it, means touching every layer in between, and it's not obvious from reading any single component why theme is even there.",
+    "whyAIGeneratesThis": "Passing a prop down through children is the most literal, mechanical way to satisfy 'make this value available to a nested component,' and it's genuinely correct for one or two levels. The model doesn't reliably recognize when a chain has gotten deep enough that a different tool — Context, composition, or a shared store — would be more appropriate, since that judgment depends on how deep the tree is and how many components are just forwarding, not on the correctness of any single step.",
+    "theFix": {
+      "before": "function App({ theme }) {\n  return <Dashboard theme={theme} />;\n}\nfunction Dashboard({ theme }) {\n  return <Sidebar theme={theme} />;\n}\nfunction Sidebar({ theme }) {\n  return <UserMenu theme={theme} />;\n}\nfunction UserMenu({ theme }) {\n  return <ThemeToggleButton theme={theme} />;\n}",
+      "after": "const ThemeContext = createContext('light');\n\nfunction App({ theme }) {\n  return (\n    <ThemeContext.Provider value={theme}>\n      <Dashboard />\n    </ThemeContext.Provider>\n  );\n}\n// Dashboard, Sidebar, and UserMenu no longer mention theme at all\nfunction ThemeToggleButton() {\n  const theme = useContext(ThemeContext);\n}",
+      "commentary": "Context lets only the components that actually care about a value read it, without every intermediate layer having to know it exists."
+    },
+    "reviewHeuristic": "When a prop passes through three or more components that never read it themselves, that's the signal to reach for Context or composition instead of continuing to drill it deeper."
+  },
+  "publishedAt": "2026-07-20T01:00:00Z",
+  "version": 1
+}

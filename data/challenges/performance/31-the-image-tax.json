@@ -1,0 +1,35 @@
+{
+  "id": "performance-31",
+  "slug": "the-image-tax",
+  "title": "The image tax",
+  "category": "performance",
+  "difficulty": "easy",
+  "timeMinutes": 3,
+  "framework": "Next.js",
+  "context": "A developer asked an AI assistant to add a hero banner image to a Next.js landing page. The suggested code renders the image correctly, but the Lighthouse performance score drops sharply and the Largest Contentful Paint time nearly triples.",
+  "code": {
+    "language": "tsx",
+    "filename": "Hero.tsx",
+    "snippet": "export default function Hero() {\n  return (\n    <section>\n      <img src=\"/hero-banner.png\" alt=\"Product hero banner\" />\n      <h1>Ship faster with ReviewLabs</h1>\n    </section>\n  );\n}"
+  },
+  "question": "Why does this hero image tank the page's Largest Contentful Paint score?",
+  "options": [
+    "A plain <img> ships the full-resolution source file with no responsive sizing, lazy-loading, or modern format conversion — next/image handles all of that automatically and this code opts out of it.",
+    "Next.js blocks all <img> tags from rendering above the fold by default.",
+    "Long alt text forces the browser to delay paint until it's been read.",
+    "<section> elements can't contain images without an explicit width and height in Next.js."
+  ],
+  "correctAnswerIndex": 0,
+  "explanation": {
+    "theBug": "A plain img tag serves the source file exactly as it is — full resolution, original format, no lazy-loading hints, and the browser doesn't know its dimensions ahead of time, which can also cause layout shift. Next.js ships next/image specifically to solve this: automatic resizing per device, modern format conversion like WebP or AVIF, and priority loading hints for above-the-fold images. Using a raw img for a large hero image opts out of all of it, and the unoptimized file becomes the single biggest resource blocking Largest Contentful Paint.",
+    "whyAIGeneratesThis": "A plain img tag is the universal, framework-agnostic way to render an image in HTML, and it's what most training data outside of Next.js-specific examples uses. The model doesn't reliably default to a framework-specific optimized component unless the prompt explicitly mentions performance or Next.js image handling — plain HTML is the safe, generic answer it falls back on.",
+    "theFix": {
+      "before": "<img src=\"/hero-banner.png\" alt=\"Product hero banner\" />",
+      "after": "import Image from 'next/image';\n\n<Image\n  src=\"/hero-banner.png\"\n  alt=\"Product hero banner\"\n  width={1600}\n  height={900}\n  priority\n/>",
+      "commentary": "next/image handles responsive sizing and format conversion automatically; priority tells Next.js to preload this specific image since it's above the fold."
+    },
+    "reviewHeuristic": "In a Next.js codebase, treat every raw img tag as worth a second look — is next/image intentionally skipped here, or did the AI just default to generic HTML?"
+  },
+  "publishedAt": "2026-07-19T03:00:00Z",
+  "version": 1
+}

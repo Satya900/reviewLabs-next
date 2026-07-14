@@ -1,0 +1,35 @@
+{
+  "id": "security-16",
+  "slug": "the-reflected-echo",
+  "title": "The reflected echo",
+  "category": "security",
+  "difficulty": "medium",
+  "timeMinutes": 4,
+  "framework": "React",
+  "context": "A developer asked an AI assistant to render a search page's 'Showing results for' message, bolding the term the user typed. The suggested code renders correctly for normal searches, but a malicious query turns into a working script tag on the page.",
+  "code": {
+    "language": "jsx",
+    "filename": "SearchResultsHeader.jsx",
+    "snippet": "function SearchResultsHeader({ query }) {\n  return (\n    <h2\n      dangerouslySetInnerHTML={{\n        __html: `Showing results for: <strong>${query}</strong>`,\n      }}\n    />\n  );\n}"
+  },
+  "question": "What happens if a user searches for <img src=x onerror=alert(document.cookie)>?",
+  "options": [
+    "The browser executes the injected script — dangerouslySetInnerHTML renders the query as raw HTML with no escaping, a classic reflected XSS.",
+    "React automatically escapes the query before interpolation, so it renders as harmless text.",
+    "The <img> tag is stripped because dangerouslySetInnerHTML only allows <strong> and <em>.",
+    "The page throws a hydration error and refuses to render."
+  ],
+  "correctAnswerIndex": 0,
+  "explanation": {
+    "theBug": "dangerouslySetInnerHTML does exactly what its name says — it injects the given string as raw HTML with zero escaping. Interpolating unescaped user input directly into that HTML string lets an attacker submit a search query containing a live img onerror tag, which the browser executes as JavaScript the instant the element renders. This is a textbook reflected XSS: the payload lives in the query and reflects straight back into the page.",
+    "whyAIGeneratesThis": "AI assistants readily reach for dangerouslySetInnerHTML whenever a prompt mentions bolding part of the text or rendering some HTML, because it's the most direct way to get inline formatting working. Models are inconsistent about pairing that with a sanitization step, like DOMPurify, unless the prompt explicitly mentions security or untrusted input — and a routine 'show the search query' request rarely does.",
+    "theFix": {
+      "before": "return (\n    <h2\n      dangerouslySetInnerHTML={{\n        __html: `Showing results for: <strong>${query}</strong>`,\n      }}\n    />\n  );",
+      "after": "return (\n    <h2>\n      Showing results for: <strong>{query}</strong>\n    </h2>\n  );",
+      "commentary": "Let React render the query as text via normal JSX interpolation — it escapes automatically. Only reach for dangerouslySetInnerHTML with content that has been through a real sanitizer like DOMPurify."
+    },
+    "reviewHeuristic": "Treat every use of dangerouslySetInnerHTML as a security review trigger — if user input touches it anywhere in the chain, it needs sanitization, not just formatting."
+  },
+  "publishedAt": "2026-07-17T00:00:00Z",
+  "version": 1
+}

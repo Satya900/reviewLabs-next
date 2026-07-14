@@ -1,0 +1,35 @@
+{
+  "id": "security-15",
+  "slug": "the-open-door",
+  "title": "The open execution door",
+  "category": "security",
+  "difficulty": "medium",
+  "timeMinutes": 4,
+  "framework": "Node.js / Express",
+  "context": "A developer used an AI to write a route handler that checks if a domain is reachable by running a ping test. The input comes from a query parameter. Why is this endpoint highly insecure?",
+  "code": {
+    "language": "javascript",
+    "filename": "ping.js",
+    "snippet": "const { exec } = require('child_process');\nconst express = require('express');\nconst app = express();\n\napp.get('/api/ping', (req, res) => {\n  const target = req.query.host;\n  \n  exec(`ping -c 1 ${target}`, (error, stdout, stderr) => {\n    if (error) {\n      return res.status(500).json({ error: error.message });\n    }\n    res.json({ output: stdout });\n  });\n});"
+  },
+  "question": "What security vulnerability is present in this endpoint?",
+  "options": [
+    "OS Command Injection: the 'host' parameter is concatenated directly into a shell execution string without sanitization.",
+    "Cross-Site Scripting (XSS): because the output is served back to the client as JSON.",
+    "Cross-Origin Resource Sharing (CORS) header is missing, allowing command leakage.",
+    "Denial of Service: ping runs synchronously and will block the entire Node.js event loop thread."
+  ],
+  "correctAnswerIndex": 0,
+  "explanation": {
+    "theBug": "The code uses `exec` to run a shell command and directly interpolates the user-controlled `req.query.host` parameter. An attacker can pass command separators like `;` or `&&` in the host parameter (e.g., `google.com; cat /etc/passwd`) to run arbitrary commands on the server.",
+    "whyAIGeneratesThis": "LLMs lack security awareness unless prompted. They prioritize functional code and rely heavily on string concatenation since it's simple to write, ignoring the fact that it introduces critical vulnerabilities like OS Command Injection.",
+    "theFix": {
+      "before": "exec(`ping -c 1 ${target}`, (error, stdout, stderr) => {",
+      "after": "const { execFile } = require('child_process');\n// Validate host first or use execFile to avoid invoking a shell:\nexecFile('ping', ['-c', '1', target], (error, stdout, stderr) => {",
+      "commentary": "Use execFile (which executes command binaries directly rather than running in a shell) and validate input format."
+    },
+    "reviewHeuristic": "Never pass unvalidated user input directly into system shells or database query strings via string interpolation. Use parameterized queries or args arrays."
+  },
+  "publishedAt": "2026-07-14T00:03:00Z",
+  "version": 1
+}

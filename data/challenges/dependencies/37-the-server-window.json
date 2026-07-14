@@ -1,0 +1,35 @@
+{
+  "id": "dependencies-37",
+  "slug": "the-server-window",
+  "title": "The server-side window crash",
+  "category": "dependencies",
+  "difficulty": "medium",
+  "timeMinutes": 3,
+  "framework": "Next.js (App Router)",
+  "context": "A developer is building a Next.js App Router application. They asked a chatbot to write a component that reads a value from localStorage on render. When the app is built or server-rendered, it crashes immediately. Why?",
+  "code": {
+    "language": "jsx",
+    "filename": "ThemeSelector.jsx",
+    "snippet": "export default function ThemeSelector() {\n  const theme = localStorage.getItem('theme') || 'light';\n  \n  return (\n    <div>\n      <p>Current theme: {theme}</p>\n      <button onClick={() => localStorage.setItem('theme', 'dark')}>Dark</button>\n    </div>\n  );\n}"
+  },
+  "question": "What is causing the server-side render crash?",
+  "options": [
+    "ReferenceError: 'localStorage' is not defined on the server side during pre-rendering/SSR.",
+    "React components cannot render div elements when running under Next.js server mode.",
+    "The button onClick event handler is executed on the server, triggering database write lockups.",
+    "Next.js does not allow reading string variables in components unless imported from 'next/navigation'."
+  ],
+  "correctAnswerIndex": 0,
+  "explanation": {
+    "theBug": "Next.js components are server-rendered (SSR) by default. The code attempts to read from `localStorage` directly in the component body during server-side execution, where the browser environment global object `window` (and `localStorage`) does not exist.",
+    "whyAIGeneratesThis": "LLMs lack execution context awareness. They generate standard React code that runs fine in pure client-side SPA setups (like Vite/CRA) but fails in SSR frameworks like Next.js because they don't isolate browser-only APIs in lifecycle hooks.",
+    "theFix": {
+      "before": "export default function ThemeSelector() {\n  const theme = localStorage.getItem('theme') || 'light';\n  \n  return (",
+      "after": "'use client';\nimport { useEffect, useState } from 'react';\n\nexport default function ThemeSelector() {\n  const [theme, setTheme] = useState('light');\n  \n  useEffect(() => {\n    setTheme(localStorage.getItem('theme') || 'light');\n  }, []);\n  \n  return (",
+      "commentary": "Add the 'use client' directive and read localStorage inside a useEffect hook, which only executes on the client after mounting."
+    },
+    "reviewHeuristic": "Never access browser-only globals (window, document, localStorage) directly in the render path of SSR components. Keep them inside useEffect, event handlers, or checks."
+  },
+  "publishedAt": "2026-07-14T00:06:00Z",
+  "version": 1
+}

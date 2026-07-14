@@ -1,0 +1,35 @@
+{
+  "id": "hallucinated-apis-03",
+  "slug": "the-plausible-hook",
+  "title": "The plausible hook",
+  "category": "hallucinated-apis",
+  "difficulty": "medium",
+  "timeMinutes": 4,
+  "framework": "React",
+  "context": "A developer asked an AI assistant to debounce a search input in a React component. The suggestion imports a hook directly from 'react' that sounds exactly like something the library should ship. The build fails before the component ever renders.",
+  "code": {
+    "language": "jsx",
+    "filename": "SearchBox.jsx",
+    "snippet": "import { useDebounce, useEffect, useState } from 'react';\n\nfunction SearchBox({ onSearch }) {\n  const [query, setQuery] = useState('');\n  const debouncedQuery = useDebounce(query, 300);\n\n  useEffect(() => {\n    if (debouncedQuery) onSearch(debouncedQuery);\n  }, [debouncedQuery]);\n\n  return <input value={query} onChange={(e) => setQuery(e.target.value)} />;\n}"
+  },
+  "question": "Why does this component fail to build?",
+  "options": [
+    "'react' does not export a useDebounce hook — React ships no built-in debouncing utility.",
+    "useState is called conditionally, violating the rules of hooks.",
+    "onSearch is called with a stale closure over query.",
+    "The input is missing a name attribute, which React requires."
+  ],
+  "correctAnswerIndex": 0,
+  "explanation": {
+    "theBug": "React's core package has never shipped a useDebounce hook. Debouncing needs custom logic (a useEffect plus setTimeout) or a third-party hook library such as use-debounce or usehooks-ts. Importing useDebounce from 'react' fails immediately because that export doesn't exist on the package.",
+    "whyAIGeneratesThis": "Debouncing input is such a common React pattern that dozens of tutorials and boilerplate hook libraries define a useDebounce hook. The model has seen the pattern so often it treats it as if it were part of React's built-in hook set, rather than remembering it always comes from a separate package or a hand-written implementation.",
+    "theFix": {
+      "before": "import { useDebounce, useEffect, useState } from 'react';",
+      "after": "import { useEffect, useState } from 'react';\n\nfunction useDebounce(value, delayMs) {\n  const [debounced, setDebounced] = useState(value);\n  useEffect(() => {\n    const id = setTimeout(() => setDebounced(value), delayMs);\n    return () => clearTimeout(id);\n  }, [value, delayMs]);\n  return debounced;\n}",
+      "commentary": "Either write a small custom debounce hook or install a maintained package like use-debounce — never assume React ships one."
+    },
+    "reviewHeuristic": "If a hook name isn't in React's official docs, verify which package actually exports it before trusting the import."
+  },
+  "publishedAt": "2026-07-15T01:00:00Z",
+  "version": 1
+}

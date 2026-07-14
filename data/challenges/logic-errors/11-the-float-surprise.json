@@ -1,0 +1,35 @@
+{
+  "id": "logic-errors-11",
+  "slug": "the-float-surprise",
+  "title": "The float surprise",
+  "category": "logic-errors",
+  "difficulty": "medium",
+  "timeMinutes": 4,
+  "framework": "JavaScript",
+  "context": "A developer asked an AI assistant to validate that a shopping cart's line-item prices sum exactly to the order total before allowing checkout. The suggested equality check fails randomly on orders that are, by every human measure, correct.",
+  "code": {
+    "language": "javascript",
+    "filename": "checkout.js",
+    "snippet": "function totalsMatch(lineItems, expectedTotal) {\n  const sum = lineItems.reduce((acc, item) => acc + item.price, 0);\n  return sum === expectedTotal;\n}\n\ntotalsMatch([{ price: 0.1 }, { price: 0.2 }], 0.3); // ?"
+  },
+  "question": "What does totalsMatch([{ price: 0.1 }, { price: 0.2 }], 0.3) actually return, and why?",
+  "options": [
+    "false — 0.1 + 0.2 evaluates to 0.30000000000000004 in floating-point arithmetic, which is not === to 0.3.",
+    "true — JavaScript rounds decimal addition to the nearest cent automatically.",
+    "NaN — adding two decimals with different precision throws a silent type coercion error.",
+    "It throws a RangeError because floating-point numbers can't be compared with ===."
+  ],
+  "correctAnswerIndex": 0,
+  "explanation": {
+    "theBug": "JavaScript numbers are IEEE 754 doubles, and 0.1 and 0.2 cannot be represented exactly in binary floating point. 0.1 + 0.2 actually evaluates to 0.30000000000000004, which fails a strict === comparison against the literal 0.3. This makes an otherwise-correct order fail validation and block checkout for no visible reason.",
+    "whyAIGeneratesThis": "Strict equality is the default, idiomatic way to compare two numbers in JavaScript, and it's correct for integers. The model doesn't reliably distinguish 'these are integers, === is safe' from 'these are money values computed via floating-point addition, === will eventually break' — that distinction requires reasoning about the specific data, not just the language syntax.",
+    "theFix": {
+      "before": "return sum === expectedTotal;",
+      "after": "const EPSILON = 0.005; // half a cent tolerance\n  return Math.abs(sum - expectedTotal) < EPSILON;",
+      "commentary": "For money, either compare with a small epsilon tolerance or, better, do all arithmetic in integer cents/paise instead of floating-point currency units."
+    },
+    "reviewHeuristic": "Never compare floating-point sums with === — especially for money math — use an epsilon tolerance or switch to integer arithmetic."
+  },
+  "publishedAt": "2026-07-16T03:00:00Z",
+  "version": 1
+}

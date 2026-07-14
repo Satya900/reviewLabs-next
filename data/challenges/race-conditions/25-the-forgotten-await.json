@@ -1,0 +1,35 @@
+{
+  "id": "race-conditions-25",
+  "slug": "the-forgotten-await",
+  "title": "The forgotten await",
+  "category": "race-conditions",
+  "difficulty": "medium",
+  "timeMinutes": 4,
+  "framework": "Node.js",
+  "context": "A developer asked an AI assistant to save an order to the database and then send a confirmation email referencing the saved order's ID. The suggested code runs without errors, but the confirmation email sometimes goes out with 'undefined' as the order ID.",
+  "code": {
+    "language": "javascript",
+    "filename": "placeOrder.js",
+    "snippet": "async function placeOrder(cart) {\n  let order;\n  saveOrder(cart).then((saved) => {\n    order = saved;\n  });\n\n  await sendConfirmationEmail(order.id);\n  return order;\n}"
+  },
+  "question": "Why does sendConfirmationEmail sometimes receive an order with an undefined id?",
+  "options": [
+    "The missing await on saveOrder means sendConfirmationEmail runs before the .then callback has a chance to assign order, so order is still undefined.",
+    "sendConfirmationEmail is being called with the wrong argument name entirely.",
+    "saveOrder(cart) throws synchronously whenever the cart is non-empty.",
+    "await only works on the last statement in an async function, so the first usage is ignored."
+  ],
+  "correctAnswerIndex": 0,
+  "explanation": {
+    "theBug": "saveOrder(cart).then(...) starts the save operation but the function doesn't await it — execution moves immediately to the next line while that promise is still pending. sendConfirmationEmail(order.id) runs with order still set to its initial undefined value, because the .then callback that assigns order hasn't fired yet. The email goes out referencing an order that, from the code's perspective, doesn't exist yet.",
+    "whyAIGeneratesThis": "Mixing .then() chaining with async/await in the same function is a common transitional pattern in real codebases, and the model reproduces that mixed style without reliably tracking that .then() branches off into a separate, un-awaited execution path. It reads as sequential because it's written top-to-bottom, but the actual execution order depends on when each promise settles.",
+    "theFix": {
+      "before": "let order;\n  saveOrder(cart).then((saved) => {\n    order = saved;\n  });\n\n  await sendConfirmationEmail(order.id);\n  return order;",
+      "after": "const order = await saveOrder(cart);\n  await sendConfirmationEmail(order.id);\n  return order;",
+      "commentary": "Once a function is already async, use await consistently instead of mixing in .then() chains — it keeps execution order visually and actually sequential."
+    },
+    "reviewHeuristic": "In an async function, watch for any promise-returning call that isn't awaited — a missing await is one of the easiest ways for 'later' code to silently run before 'earlier' code finishes."
+  },
+  "publishedAt": "2026-07-18T02:00:00Z",
+  "version": 1
+}

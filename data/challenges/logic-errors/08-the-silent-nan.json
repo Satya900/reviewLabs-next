@@ -1,0 +1,35 @@
+{
+  "id": "logic-errors-08",
+  "slug": "the-silent-nan",
+  "title": "The silent NaN",
+  "category": "logic-errors",
+  "difficulty": "easy",
+  "timeMinutes": 3,
+  "framework": "JavaScript",
+  "context": "A developer asked an AI assistant to calculate a cart line total from a quantity field. The suggested code passes every manual test where a number is typed, but when a customer clears the field before checkout, the page silently shows a broken price instead of stopping them.",
+  "code": {
+    "language": "javascript",
+    "filename": "cart.js",
+    "snippet": "function calculateLineTotal(price, quantityInput) {\n  const quantity = parseInt(quantityInput);\n  return price * quantity;\n}\n\nconst total = calculateLineTotal(499, ''); // customer cleared the field\nrenderTotal(total);"
+  },
+  "question": "What does renderTotal(total) end up displaying, and why does nobody notice?",
+  "options": [
+    "'₹NaN' — parseInt('') returns NaN, and NaN silently propagates through the multiplication with no error thrown.",
+    "'₹0' — parseInt('') defaults to 0, so the total is simply zero.",
+    "'₹499' — an empty quantity is treated as a quantity of 1.",
+    "The function throws a TypeError before renderTotal is ever called."
+  ],
+  "correctAnswerIndex": 0,
+  "explanation": {
+    "theBug": "parseInt('') returns NaN, not 0 and not an error. Multiplying any number by NaN produces NaN, and NaN doesn't throw — it just propagates silently through every downstream calculation and eventually gets rendered as the literal string '₹NaN' on the page. Nothing in this code path validates the parsed value before using it.",
+    "whyAIGeneratesThis": "LLMs generate the happy-path version of parsing logic by default — parseInt(input) reads as complete because it compiles and works for every valid test case a developer tries manually. Models are far less consistent about adding the defensive isNaN check afterward, since that requires anticipating a case that isn't in the prompt or the example being pattern-matched against.",
+    "theFix": {
+      "before": "function calculateLineTotal(price, quantityInput) {\n  const quantity = parseInt(quantityInput);\n  return price * quantity;\n}",
+      "after": "function calculateLineTotal(price, quantityInput) {\n  const quantity = parseInt(quantityInput, 10);\n  if (Number.isNaN(quantity) || quantity < 1) {\n    throw new Error('Quantity must be a positive number');\n  }\n  return price * quantity;\n}",
+      "commentary": "Validate the result of parseInt immediately — NaN should fail loudly, not flow downstream into a price calculation."
+    },
+    "reviewHeuristic": "Any time raw user input passes through parseInt or Number(), check for NaN before trusting the result — parsing failure is silent by design."
+  },
+  "publishedAt": "2026-07-16T00:00:00Z",
+  "version": 1
+}

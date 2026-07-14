@@ -1,0 +1,35 @@
+{
+  "id": "race-conditions-22",
+  "slug": "the-stale-closure",
+  "title": "The stale React closure",
+  "category": "race-conditions",
+  "difficulty": "medium",
+  "timeMinutes": 4,
+  "framework": "React",
+  "context": "The following component is intended to display a timer that increments every second. However, users report that the number gets stuck at 1 and never increments further. Why is this happening?",
+  "code": {
+    "language": "jsx",
+    "filename": "TimerComponent.jsx",
+    "snippet": "import { useState, useEffect } from 'react';\n\nexport default function TimerComponent() {\n  const [count, setCount] = useState(0);\n\n  useEffect(() => {\n    const intervalId = setInterval(() => {\n      setCount(count + 1);\n    }, 1000);\n\n    return () => clearInterval(intervalId);\n  }, []);\n\n  return <div>Timer: {count}</div>;\n}"
+  },
+  "question": "What is causing the counter to get stuck at 1?",
+  "options": [
+    "The effect hook dependency array is empty, closing over the initial value of count (0) inside the interval callback.",
+    "setInterval is not supported inside useEffect unless configured as a Web Worker.",
+    "The clean-up function clearInterval is called immediately, stopping the interval after one tick.",
+    "setCount should be called asynchronously with a await keyword inside the interval."
+  ],
+  "correctAnswerIndex": 0,
+  "explanation": {
+    "theBug": "The dependency array `[]` tells React to run the effect only once on mount. The interval callback closes over the initial render's scope where `count` is `0`. Every second, the interval runs `setCount(0 + 1)`, setting state to `1` repeatedly.",
+    "whyAIGeneratesThis": "LLMs frequently write empty dependency arrays to avoid infinite re-render loops or because they copy boilerplate useEffect templates without correctly analyzing which state variables are referenced within closures.",
+    "theFix": {
+      "before": "setCount(count + 1);",
+      "after": "setCount(prevCount => prevCount + 1);",
+      "commentary": "Use a functional state updater to retrieve the most recent state value without needing 'count' in the dependencies."
+    },
+    "reviewHeuristic": "Check that any variables read inside asynchronous callbacks (like timers or event listeners) are either listed in the dependency array or avoided using updater patterns."
+  },
+  "publishedAt": "2026-07-14T00:02:00Z",
+  "version": 1
+}

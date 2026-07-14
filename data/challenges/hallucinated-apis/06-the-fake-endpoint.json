@@ -1,0 +1,35 @@
+{
+  "id": "hallucinated-apis-06",
+  "slug": "the-fake-endpoint",
+  "title": "The fake endpoint",
+  "category": "hallucinated-apis",
+  "difficulty": "hard",
+  "timeMinutes": 5,
+  "framework": "Stripe API",
+  "context": "A developer asked an AI assistant to refund half of a Stripe charge programmatically. The suggested code calls a method that looks like it belongs to the Stripe Node SDK, but throws the instant it's invoked in a live billing job.",
+  "code": {
+    "language": "javascript",
+    "filename": "refunds.js",
+    "snippet": "const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);\n\nasync function partialRefund(chargeId, amountCents) {\n  return stripe.charges.partialRefund(chargeId, {\n    amount: amountCents,\n  });\n}"
+  },
+  "question": "What's wrong with this Stripe integration?",
+  "options": [
+    "stripe.charges.partialRefund does not exist — partial refunds use the general refunds.create method with an amount field.",
+    "amountCents should be passed as a string, not a number, per the Stripe API.",
+    "chargeId must be prefixed with 'pi_' instead of 'ch_'.",
+    "process.env.STRIPE_SECRET_KEY is undefined at import time."
+  ],
+  "correctAnswerIndex": 0,
+  "explanation": {
+    "theBug": "The Stripe Node SDK has no charges.partialRefund method. Stripe models refunds — full or partial — as a single resource: stripe.refunds.create({ charge: chargeId, amount: amountCents }). There is no separate 'partial' variant; the same endpoint handles both cases, distinguished only by whether amount is included. Calling stripe.charges.partialRefund throws TypeError: stripe.charges.partialRefund is not a function.",
+    "whyAIGeneratesThis": "The English phrase 'partial refund' maps naturally onto a plausible-sounding method name, and the model has seen the general pattern of resource-scoped action methods elsewhere in the SDK, like charges.capture. It extrapolates a method that fits Stripe's naming conventions but was never actually implemented that way, since Stripe deliberately unified full and partial refunds into one endpoint.",
+    "theFix": {
+      "before": "return stripe.charges.partialRefund(chargeId, {\n    amount: amountCents,\n  });",
+      "after": "return stripe.refunds.create({\n    charge: chargeId,\n    amount: amountCents,\n  });",
+      "commentary": "Check the official Stripe API reference for the resource name — refunds, not a method hanging off charges — before trusting an AI-suggested call shape."
+    },
+    "reviewHeuristic": "For paid third-party APIs, cross-check AI-suggested method names against the official SDK reference before the code touches real money or user data."
+  },
+  "publishedAt": "2026-07-15T04:00:00Z",
+  "version": 1
+}

@@ -1,0 +1,35 @@
+{
+  "id": "hallucinated-apis-02",
+  "slug": "the-confident-method",
+  "title": "The confident method",
+  "category": "hallucinated-apis",
+  "difficulty": "easy",
+  "timeMinutes": 3,
+  "framework": "Node.js",
+  "context": "A developer asked an AI assistant to deep-clone a settings object before mutating it inside a reducer. The suggested code runs the import fine but throws the moment the function is actually called.",
+  "code": {
+    "language": "javascript",
+    "filename": "settings.js",
+    "snippet": "const _ = require('lodash');\n\nfunction updateSettings(settings, patch) {\n  const draft = _.deepClone(settings);\n  Object.assign(draft, patch);\n  return draft;\n}\n\nmodule.exports = { updateSettings };"
+  },
+  "question": "What happens when updateSettings runs?",
+  "options": [
+    "TypeError: _.deepClone is not a function — Lodash's deep-clone method is named cloneDeep, not deepClone.",
+    "The settings object clones correctly but the patch is applied in the wrong order.",
+    "Object.assign throws because draft is undefined at that point.",
+    "The function works correctly; there is no bug here."
+  ],
+  "correctAnswerIndex": 0,
+  "explanation": {
+    "theBug": "Lodash does not export a deepClone function. Its actual deep-clone method is named cloneDeep. Calling _.deepClone(...) throws TypeError: _.deepClone is not a function the moment this code path runs, because _.deepClone is undefined on the Lodash object.",
+    "whyAIGeneratesThis": "LLMs learn API names statistically from a mix of libraries and blog posts, some of which really do define hand-rolled utilities called deepClone. The model blends the common English phrase 'deep clone' with Lodash's general naming style and produces a plausible-sounding method name that Lodash simply never shipped.",
+    "theFix": {
+      "before": "const draft = _.deepClone(settings);",
+      "after": "const draft = _.cloneDeep(settings);",
+      "commentary": "Lodash's real deep-clone export is cloneDeep — check the docs or type definitions before trusting an AI-suggested method name."
+    },
+    "reviewHeuristic": "When AI code calls a library method you don't recognize, look it up before merging — a plausible name is not the same as a real export."
+  },
+  "publishedAt": "2026-07-15T00:00:00Z",
+  "version": 1
+}

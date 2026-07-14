@@ -1,0 +1,35 @@
+{
+  "id": "dependencies-41",
+  "slug": "the-env-mismatch",
+  "title": "The env mismatch",
+  "category": "dependencies",
+  "difficulty": "medium",
+  "timeMinutes": 4,
+  "framework": "Next.js",
+  "context": "A developer asked an AI assistant to read a feature-flag environment variable to conditionally enable a new checkout flow. The suggested code works perfectly for the whole team locally, but the feature silently never turns on once deployed.",
+  "code": {
+    "language": "typescript",
+    "filename": "featureFlags.ts",
+    "snippet": "export function isNewCheckoutEnabled(): boolean {\n  return process.env.ENABLE_NEW_CHECKOUT === 'true';\n}"
+  },
+  "question": "The team's .env.local file has ENABLE_NEW_CHECKOUT=true and it works for everyone locally. Why is the feature silently disabled in production?",
+  "options": [
+    ".env.local is gitignored and never deployed — if the variable was never added to production's environment, process.env.ENABLE_NEW_CHECKOUT is undefined, and undefined === 'true' is false.",
+    "process.env values are always strings in development but booleans in production, so the comparison type-mismatches.",
+    "Environment variables can only be read inside API routes, never in regular application code.",
+    "ENABLE_NEW_CHECKOUT needs a NEXT_PUBLIC_ prefix to be readable anywhere in a Next.js app."
+  ],
+  "correctAnswerIndex": 0,
+  "explanation": {
+    "theBug": ".env.local, or equivalent local-only env files, is conventionally gitignored specifically so secrets and local overrides never get committed — which also means it never ships to production by default. If nobody separately configured ENABLE_NEW_CHECKOUT in the actual production hosting environment's variables, process.env.ENABLE_NEW_CHECKOUT is simply undefined there. undefined === 'true' evaluates to false, so the feature silently stays off, with no error, no warning, just a flag that quietly never flips.",
+    "whyAIGeneratesThis": "The code itself is completely correct — reading and comparing an env var this way is standard practice. The gap is environmental, not logical: whether a given variable is actually set in a given deployment target is invisible from the source code, so an AI assistant writing this function has no way to verify, or even flag, that the variable also needs to be configured somewhere outside the codebase for each environment it runs in.",
+    "theFix": {
+      "before": "export function isNewCheckoutEnabled(): boolean {\n  return process.env.ENABLE_NEW_CHECKOUT === 'true';\n}",
+      "after": "export function isNewCheckoutEnabled(): boolean {\n  const value = process.env.ENABLE_NEW_CHECKOUT;\n  if (value === undefined) {\n    console.warn('ENABLE_NEW_CHECKOUT is not set in this environment — defaulting to disabled');\n  }\n  return value === 'true';\n}",
+      "commentary": "The real fix is setting the variable in the production hosting platform's environment settings — logging when it's missing turns a silent failure into a visible one."
+    },
+    "reviewHeuristic": "Any env var that only exists in a local .env file needs a deliberate checklist item — add it to every deployment target — before it's relied on in code; the code being correct doesn't mean the variable exists everywhere it needs to."
+  },
+  "publishedAt": "2026-07-21T03:00:00Z",
+  "version": 1
+}

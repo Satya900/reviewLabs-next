@@ -1,0 +1,35 @@
+{
+  "id": "race-conditions-23",
+  "slug": "the-race-to-render",
+  "title": "The race to render",
+  "category": "race-conditions",
+  "difficulty": "hard",
+  "timeMinutes": 5,
+  "framework": "React",
+  "context": "A developer asked an AI assistant to fetch search results as the user types in a live search box. The suggested code works well on a fast connection, but on a throttled network, older searches sometimes overwrite newer ones with stale results.",
+  "code": {
+    "language": "jsx",
+    "filename": "LiveSearch.jsx",
+    "snippet": "function LiveSearch() {\n  const [results, setResults] = useState([]);\n\n  const handleChange = async (e) => {\n    const query = e.target.value;\n    const res = await fetch(`/api/search?q=${query}`);\n    const data = await res.json();\n    setResults(data);\n  };\n\n  return <input onChange={handleChange} />;\n}"
+  },
+  "question": "A user quickly types 'r', then 'react'. The request for 'r' is slow and resolves after the request for 'react'. What does the results list show?",
+  "options": [
+    "The results for 'r' — whichever fetch resolves last wins and overwrites state, regardless of which query was actually typed most recently.",
+    "The results for 'react' — React automatically cancels in-flight requests triggered by the same input.",
+    "A merged list combining both 'r' and 'react' results.",
+    "An empty list, because two overlapping fetches from the same component always throw."
+  ],
+  "correctAnswerIndex": 0,
+  "explanation": {
+    "theBug": "Each keystroke fires an independent fetch with no tracking of which request is the most recent. setResults is called whenever any request resolves, with no staleness check — so if the request for the earlier, shorter query happens to take longer, due to network variance or server load, it resolves after the newer request and overwrites the correct, up-to-date results with stale ones. This is a classic out-of-order race condition.",
+    "whyAIGeneratesThis": "The straightforward fetch-on-change-then-setState pattern works perfectly in every quick manual test, where requests happen to resolve in the order they were sent — the common case on a fast local network. The model doesn't reliably reason about network timing variance, where an earlier request can complete after a later one, because that requires modeling real-world latency, not just the shape of the code.",
+    "theFix": {
+      "before": "const handleChange = async (e) => {\n    const query = e.target.value;\n    const res = await fetch(`/api/search?q=${query}`);\n    const data = await res.json();\n    setResults(data);\n  };",
+      "after": "const latestQuery = useRef('');\n\n  const handleChange = async (e) => {\n    const query = e.target.value;\n    latestQuery.current = query;\n    const res = await fetch(`/api/search?q=${query}`);\n    const data = await res.json();\n    if (latestQuery.current === query) {\n      setResults(data); // ignore stale responses from superseded requests\n    }\n  };",
+      "commentary": "Track the most recently issued query and only apply a response if it still matches — or use AbortController to cancel superseded requests outright."
+    },
+    "reviewHeuristic": "Any time a component fires overlapping async requests from repeated user input, like typing or rapid clicks, check whether the code guards against an older request resolving after a newer one."
+  },
+  "publishedAt": "2026-07-18T00:00:00Z",
+  "version": 1
+}

@@ -1,0 +1,35 @@
+{
+  "id": "dependencies-39",
+  "slug": "the-esm-cjs-clash",
+  "title": "The ESM/CJS clash",
+  "category": "dependencies",
+  "difficulty": "easy",
+  "timeMinutes": 3,
+  "framework": "Node.js",
+  "context": "A developer asked an AI assistant to add a small utility package to a Node.js script. The suggested import statement matches the package's README exactly, but running the script throws immediately.",
+  "code": {
+    "language": "javascript",
+    "filename": "generateId.js",
+    "snippet": "// package.json has no \"type\" field, so this file is treated as CommonJS\nimport { nanoid } from 'nanoid';\n\nconsole.log(nanoid());"
+  },
+  "question": "Why does this script crash immediately with a SyntaxError?",
+  "options": [
+    "The file is being run as CommonJS — no \"type\": \"module\" in package.json — but import syntax is only valid in ES modules, so Node rejects it before the script can even run.",
+    "nanoid is a TypeScript-only package and cannot be imported from plain JavaScript.",
+    "console.log cannot be called with a function result directly; it must be assigned to a variable first.",
+    "nanoid() must be awaited even though it doesn't return a promise."
+  ],
+  "correctAnswerIndex": 0,
+  "explanation": {
+    "theBug": "Whether import/export syntax is allowed in a .js file depends on the module system Node thinks that file belongs to — CommonJS by default, or ES modules if package.json has \"type\": \"module\", or the file uses a .mjs extension. Without that setting, Node parses this file as CommonJS, where import is not valid syntax at all, and throws a SyntaxError before a single line actually executes. The code is correct for an ESM project and wrong for a CommonJS one — nothing in the import statement itself signals which kind this project is.",
+    "whyAIGeneratesThis": "Package READMEs increasingly show ESM-style import examples by default, since that's the modern convention, and the model reproduces that exactly as documented. It has no way to know, from the request alone, whether the target project is configured as CommonJS or ESM — that detail lives in package.json, not in the import statement it's being asked to write.",
+    "theFix": {
+      "before": "// package.json has no \"type\" field — this file is CommonJS\nimport { nanoid } from 'nanoid';\n\nconsole.log(nanoid());",
+      "after": "// Option A: use CommonJS require() to match the project as-is\nconst { nanoid } = require('nanoid');\nconsole.log(nanoid());\n\n// Option B: add \"type\": \"module\" to package.json and keep the import syntax",
+      "commentary": "Check package.json's type field, or the file extension, before writing import vs require — they aren't interchangeable by preference, they're determined by the project's module system."
+    },
+    "reviewHeuristic": "Whenever AI-suggested code mixes import and require conventions, verify which module system the actual file is running under before trusting either syntax."
+  },
+  "publishedAt": "2026-07-21T01:00:00Z",
+  "version": 1
+}

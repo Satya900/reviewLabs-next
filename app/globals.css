@@ -1,0 +1,191 @@
+@import "tailwindcss";
+
+:root {
+  /* Notion-derived design system — see Planning/Design.md */
+  /* Warm paper canvas + white surfaces */
+  --bg-canvas: #f6f5f4;
+  --bg-surface: #ffffff;
+  --bg-surface-card: #ffffff;
+  --bg-surface-elevated: #faf9f8;
+  --bg-code: #0d1117;
+
+  /* Ink scale */
+  --text-primary: rgba(0, 0, 0, 0.95);
+  --text-secondary: #31302e;
+  --text-tertiary: #615d59;
+  --text-faint: #a39e98;
+  --text-on-code: rgba(255, 255, 255, 0.86);
+  --text-inverse: #ffffff;
+
+  /* Hairlines */
+  --border-subtle: #e6e6e6;
+  --border-default: #dddddd;
+  --border-strong: #c2c2c2;
+
+  /* Accent — the single structural color, reserved for CTAs/links/focus */
+  --accent-primary: #0075de;
+  --accent-hover: #005bab;
+  --accent-subtle: #e8f2fd;
+  --accent-text: #0075de;
+
+  /* Deep indigo — reserved for a single dark hero "night" moment */
+  --secondary: #213183;
+
+  /* Semantic */
+  --success: #1aae39;
+  --success-subtle: rgba(26, 174, 57, 0.1);
+  --success-text: #1aae39;
+
+  --danger: #dc2626;
+  --danger-subtle: rgba(220, 38, 38, 0.08);
+  --danger-text: #dc2626;
+
+  --warning: #dd5b00;
+  --warning-subtle: rgba(221, 91, 0, 0.1);
+  --warning-text: #dd5b00;
+
+  /* Radius scale */
+  --radius-xs: 4px;
+  --radius-sm: 5px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+
+  /* Elevation — barely-there, many near-transparent layers, no hard shadows */
+  --shadow-soft: 0 0.175px 1.041px rgba(0, 0, 0, 0.01), 0 0.8px 2.925px rgba(0, 0, 0, 0.02),
+    0 2.025px 7.847px rgba(0, 0, 0, 0.027), 0 4px 18px rgba(0, 0, 0, 0.04);
+  --shadow-elevated: 0 0.335px 1.997px rgba(0, 0, 0, 0.014), 0 0.803px 4.79px rgba(0, 0, 0, 0.02),
+    0 1.514px 9.023px rgba(0, 0, 0, 0.025), 0 2.703px 16.105px rgba(0, 0, 0, 0.03),
+    0 5.056px 30.121px rgba(0, 0, 0, 0.036), 0 23px 52px rgba(0, 0, 0, 0.05);
+}
+
+body {
+  background-color: var(--bg-canvas);
+  color: var(--text-primary);
+  font-family: var(--font-inter), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+@theme {
+  --color-canvas: var(--bg-canvas);
+  --color-surface: var(--bg-surface);
+  --color-surface-card: var(--bg-surface-card);
+  --color-surface-elevated: var(--bg-surface-elevated);
+  --color-elevated: var(--bg-surface-elevated);
+  --color-code-bg: var(--bg-code);
+
+  --color-txt-primary: var(--text-primary);
+  --color-txt-secondary: var(--text-secondary);
+  --color-txt-tertiary: var(--text-tertiary);
+  --color-txt-code: var(--text-on-code);
+  --color-txt-inverse: var(--text-inverse);
+  --color-stone: var(--text-faint);
+
+  --color-border-subt: var(--border-subtle);
+  --color-border-def: var(--border-default);
+  --color-border-str: var(--border-strong);
+
+  --color-accent: var(--accent-primary);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-subtle: var(--accent-subtle);
+  --color-accent-text: var(--accent-text);
+  --color-secondary: var(--secondary);
+
+  --color-success: var(--success);
+  --color-success-subtle: var(--success-subtle);
+  --color-success-text: var(--success-text);
+
+  --color-danger: var(--danger);
+  --color-danger-subtle: var(--danger-subtle);
+  --color-danger-text: var(--danger-text);
+
+  --color-warning: var(--warning);
+  --color-warning-subtle: var(--warning-subtle);
+  --color-warning-text: var(--warning-text);
+
+  --radius-xs: var(--radius-xs);
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --radius-xl: var(--radius-xl);
+
+  --shadow-soft: var(--shadow-soft);
+  --shadow-elevated: var(--shadow-elevated);
+
+  --font-sans: var(--font-inter), system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), monospace;
+}
+
+/* Heavy-weight display headings — Notion's voice is tight, heavy, quiet-confident:
+   weight 700 with aggressive negative tracking, no serif face. */
+.font-display {
+  font-family: var(--font-inter), system-ui, sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+}
+
+.font-sans-humanist {
+  font-family: var(--font-inter), system-ui, sans-serif;
+  letter-spacing: -0.01em;
+}
+
+/* Code display: always dark, regardless of the surrounding light theme —
+   code should read as a real editor window, not themed page content. */
+.shiki {
+  background-color: var(--bg-code) !important;
+  color: var(--text-on-code) !important;
+  padding: 24px;
+  border-radius: var(--radius-lg);
+  font-family: var(--font-jetbrains-mono), monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  overflow-x: auto;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.shiki::-webkit-scrollbar {
+  height: 6px;
+}
+.shiki::-webkit-scrollbar-track {
+  background: transparent;
+}
+.shiki::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 9999px;
+}
+.shiki::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+/* Buggy line styles (inside the always-dark code block) */
+.shiki-buggy-line {
+  position: relative;
+  display: block;
+  width: 100%;
+}
+.reveal-bug .shiki-buggy-line {
+  background-color: rgba(220, 38, 38, 0.18) !important;
+}
+.reveal-bug .shiki-buggy-line::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2.5px;
+  background-color: #ef4444;
+}
+
+.subtle-bug .shiki-buggy-line {
+  background-color: rgba(220, 38, 38, 0.06);
+}
+.subtle-bug .shiki-buggy-line::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 1.5px;
+  background-color: rgba(239, 68, 68, 0.4);
+}

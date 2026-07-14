@@ -1,0 +1,35 @@
+{
+  "id": "logic-errors-07",
+  "slug": "the-off-by-one",
+  "title": "The off-by-one pagination",
+  "category": "logic-errors",
+  "difficulty": "easy",
+  "timeMinutes": 3,
+  "framework": "JavaScript",
+  "context": "An AI assistant wrote a pagination helper function to extract a specific page of items from a list. It was asked to return items for page 1, page 2, etc. (where pages are 1-indexed, and each page has a size of `limit`). However, the output is incorrect. Why?",
+  "code": {
+    "language": "javascript",
+    "filename": "paginate.js",
+    "snippet": "function getPaginatedItems(items, page, limit) {\n  const startIndex = page * limit;\n  const endIndex = startIndex + limit;\n  return items.slice(startIndex, endIndex);\n}"
+  },
+  "question": "What is the logic error in calculating the pagination indexes?",
+  "options": [
+    "The startIndex is offset; for page 1, it starts at limit instead of 0.",
+    "Array.slice is destructive and will mutate the original items array.",
+    "The endIndex should be startIndex + limit - 1 because slice is inclusive of the end boundary.",
+    "The page variable must be converted to a string before arithmetic operations."
+  ],
+  "correctAnswerIndex": 0,
+  "explanation": {
+    "theBug": "For page = 1 and limit = 10, the startIndex is calculated as `1 * 10 = 10`, which skips the first 10 items (indexes 0-9). The correct startIndex calculation for 1-indexed pages is `(page - 1) * limit`.",
+    "whyAIGeneratesThis": "AI models often mix up 0-based and 1-based index offsets because training data contains both pagination styles. Without explicit instructions on page indexing, the LLM defaulted to a naive multiplication which shifts the offsets.",
+    "theFix": {
+      "before": "const startIndex = page * limit;",
+      "after": "const startIndex = (page - 1) * limit;",
+      "commentary": "Subtract 1 from the page number to account for 0-indexed array boundaries."
+    },
+    "reviewHeuristic": "Always double check index arithmetic in pagination, slicing, and range functions, especially when combining 1-indexed parameters with 0-indexed programming languages."
+  },
+  "publishedAt": "2026-07-14T00:01:00Z",
+  "version": 1
+}

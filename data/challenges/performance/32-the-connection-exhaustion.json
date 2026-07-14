@@ -1,0 +1,35 @@
+{
+  "id": "performance-32",
+  "slug": "the-connection-exhaustion",
+  "title": "The connection exhaustion",
+  "category": "performance",
+  "difficulty": "hard",
+  "timeMinutes": 5,
+  "framework": "Next.js",
+  "context": "A developer asked an AI assistant to add a database query to a Next.js API route. The suggested code works fine in local testing, but under real traffic the app starts throwing 'too many connections' errors and the database eventually stops responding.",
+  "code": {
+    "language": "typescript",
+    "filename": "route.ts",
+    "snippet": "import { Client } from 'pg';\n\nexport async function GET(request: Request) {\n  const client = new Client({ connectionString: process.env.DATABASE_URL });\n  await client.connect();\n  const result = await client.query('SELECT * FROM products LIMIT 20');\n  return Response.json(result.rows);\n}"
+  },
+  "question": "Why does this route work fine in local testing but crash the database under real traffic?",
+  "options": [
+    "A new client connects to the database on every request and is never explicitly closed or reused — under concurrent traffic this quickly exhausts the database's max connection limit.",
+    "SELECT * always locks the entire products table until the request completes.",
+    "process.env.DATABASE_URL is re-read from disk on every request, adding latency but no connection issue.",
+    "Response.json() keeps the database connection open until the client's browser tab closes."
+  ],
+  "correctAnswerIndex": 0,
+  "explanation": {
+    "theBug": "Every request to this route opens a brand-new database connection via new Client() and client.connect(), and never calls client.end() to close it. A single request in local testing is invisible because one connection is fine. Under real concurrent traffic, dozens or hundreds of simultaneous requests each open their own connection, and databases have a hard cap on total connections — Postgres defaults to around 100. The app quickly exhausts that limit and starts throwing 'too many connections,' and the leaked connections that are never closed make it worse over time.",
+    "whyAIGeneratesThis": "Creating a client and connecting directly inside the handler is the most literal, step-by-step way to satisfy 'query the database in this route,' and it works correctly for a single request in isolation. Connection pooling is an infrastructure-level concern that only matters under concurrent load — a scenario a model reasoning about one request in isolation has no strong reason to consider unless the prompt specifically asks about scale or concurrency.",
+    "theFix": {
+      "before": "import { Client } from 'pg';\n\nexport async function GET(request: Request) {\n  const client = new Client({ connectionString: process.env.DATABASE_URL });\n  await client.connect();\n  const result = await client.query('SELECT * FROM products LIMIT 20');\n  return Response.json(result.rows);\n}",
+      "after": "import { Pool } from 'pg';\n\nconst pool = new Pool({ connectionString: process.env.DATABASE_URL }); // created once, module scope\n\nexport async function GET(request: Request) {\n  const result = await pool.query('SELECT * FROM products LIMIT 20');\n  return Response.json(result.rows);\n}",
+      "commentary": "Create one shared Pool at module scope and reuse it across requests instead of opening a fresh client connection every time — the pool manages a small set of persistent connections for you."
+    },
+    "reviewHeuristic": "Any database client created and connected inside a request handler, instead of reused from a shared pool, is a connection-exhaustion bug waiting for real traffic."
+  },
+  "publishedAt": "2026-07-19T04:00:00Z",
+  "version": 1
+}

@@ -1,0 +1,227 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+  Design tokens ported from DESIGN-wise.md.
+  Wise Sans is proprietary; per the design doc's own substitute guidance we use
+  Inter at weight 900 for display/hero text and weight 600/400 for everything else.
+  Font substitute note lives in DESIGN-wise.md under "Note on Font Substitutes".
+*/
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-inter), system-ui, -apple-system, sans-serif;
+  --font-mono: var(--font-geist-mono);
+  --font-heading: var(--font-sans);
+
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+
+  /* Wise radius scale — explicit px values, not a multiplier chain */
+  --radius-none: 0px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-2xl: 24px;
+  --radius-pill: 9999px;
+  --radius-full: 9999px;
+
+  /* Wise-named tokens, exposed as Tailwind utilities: bg-wise-primary, text-wise-mute, etc. */
+  --color-wise-primary: var(--wise-primary);
+  --color-wise-primary-active: var(--wise-primary-active);
+  --color-wise-primary-neutral: var(--wise-primary-neutral);
+  --color-wise-primary-pale: var(--wise-primary-pale);
+  --color-wise-ink: var(--wise-ink);
+  --color-wise-ink-deep: var(--wise-ink-deep);
+  --color-wise-body: var(--wise-body);
+  --color-wise-mute: var(--wise-mute);
+  --color-wise-canvas: var(--wise-canvas);
+  --color-wise-canvas-soft: var(--wise-canvas-soft);
+  --color-wise-positive: var(--wise-positive);
+  --color-wise-positive-deep: var(--wise-positive-deep);
+  --color-wise-warning: var(--wise-warning);
+  --color-wise-warning-deep: var(--wise-warning-deep);
+  --color-wise-warning-content: var(--wise-warning-content);
+  --color-wise-negative: var(--wise-negative);
+  --color-wise-negative-deep: var(--wise-negative-deep);
+  --color-wise-negative-darkest: var(--wise-negative-darkest);
+  --color-wise-negative-bg: var(--wise-negative-bg);
+  --color-wise-accent-orange: var(--wise-accent-orange);
+  --color-wise-accent-cyan: var(--wise-accent-cyan);
+}
+
+:root {
+  /* Raw Wise brand tokens (DESIGN-wise.md > colors) */
+  --wise-primary: #9fe870;
+  --wise-primary-active: #cdffad;
+  --wise-primary-neutral: #c5edab;
+  --wise-primary-pale: #e2f6d5;
+  --wise-ink: #0e0f0c;
+  --wise-ink-deep: #163300;
+  --wise-body: #454745;
+  --wise-mute: #868685;
+  --wise-canvas: #ffffff;
+  --wise-canvas-soft: #e8ebe6;
+  --wise-positive: #2ead4b;
+  --wise-positive-deep: #054d28;
+  --wise-warning: #ffd11a;
+  --wise-warning-deep: #b86700;
+  --wise-warning-content: #4a3b1c;
+  --wise-negative: #d03238;
+  --wise-negative-deep: #a72027;
+  --wise-negative-darkest: #a7000d;
+  --wise-negative-bg: #320707;
+  --wise-accent-orange: #ffc091;
+  --wise-accent-cyan: #38c8ff;
+
+  /* shadcn semantic slots, mapped onto Wise tokens */
+  --background: var(--wise-canvas-soft);
+  --foreground: var(--wise-ink);
+  --card: var(--wise-canvas);
+  --card-foreground: var(--wise-ink);
+  --popover: var(--wise-canvas);
+  --popover-foreground: var(--wise-ink);
+  --primary: var(--wise-primary);
+  --primary-foreground: var(--wise-ink);
+  --secondary: var(--wise-canvas-soft);
+  --secondary-foreground: var(--wise-ink);
+  --muted: var(--wise-canvas-soft);
+  --muted-foreground: var(--wise-mute);
+  --accent: var(--wise-primary-pale);
+  --accent-foreground: var(--wise-ink);
+  --destructive: var(--wise-negative);
+  --destructive-foreground: #ffffff;
+  --border: color-mix(in srgb, var(--wise-ink) 12%, transparent);
+  --input: color-mix(in srgb, var(--wise-ink) 20%, transparent);
+  --ring: color-mix(in srgb, var(--wise-ink) 35%, transparent);
+  --chart-1: var(--wise-primary);
+  --chart-2: var(--wise-accent-cyan);
+  --chart-3: var(--wise-accent-orange);
+  --chart-4: var(--wise-warning);
+  --chart-5: var(--wise-negative);
+  --radius: 24px;
+  --sidebar: var(--wise-canvas);
+  --sidebar-foreground: var(--wise-ink);
+  --sidebar-primary: var(--wise-primary);
+  --sidebar-primary-foreground: var(--wise-ink);
+  --sidebar-accent: var(--wise-canvas-soft);
+  --sidebar-accent-foreground: var(--wise-ink);
+  --sidebar-border: color-mix(in srgb, var(--wise-ink) 10%, transparent);
+  --sidebar-ring: color-mix(in srgb, var(--wise-ink) 35%, transparent);
+}
+
+/*
+  The Wise system has no documented dark mode. We keep the same ink-on-sage
+  brand identity and only invert the deepest surfaces, per the polarity-flip
+  pattern the doc already defines for promotional cards (card-feature-dark).
+*/
+.dark {
+  --background: var(--wise-ink);
+  --foreground: var(--wise-canvas-soft);
+  --card: #1a1c17;
+  --card-foreground: var(--wise-canvas-soft);
+  --popover: #1a1c17;
+  --popover-foreground: var(--wise-canvas-soft);
+  --primary: var(--wise-primary);
+  --primary-foreground: var(--wise-ink);
+  --secondary: #1a1c17;
+  --secondary-foreground: var(--wise-canvas-soft);
+  --muted: #1a1c17;
+  --muted-foreground: var(--wise-mute);
+  --accent: #26301f;
+  --accent-foreground: var(--wise-primary);
+  --destructive: var(--wise-negative);
+  --destructive-foreground: #ffffff;
+  --border: color-mix(in srgb, white 12%, transparent);
+  --input: color-mix(in srgb, white 20%, transparent);
+  --ring: color-mix(in srgb, white 35%, transparent);
+  --sidebar: #1a1c17;
+  --sidebar-foreground: var(--wise-canvas-soft);
+  --sidebar-primary: var(--wise-primary);
+  --sidebar-primary-foreground: var(--wise-ink);
+  --sidebar-accent: #26301f;
+  --sidebar-accent-foreground: var(--wise-canvas-soft);
+  --sidebar-border: color-mix(in srgb, white 10%, transparent);
+  --sidebar-ring: color-mix(in srgb, white 35%, transparent);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+}
+
+@layer utilities {
+  /* display-mega / display-xl per DESIGN-wise.md typography scale */
+  .text-display-mega {
+    font-weight: 900;
+    font-size: 64px;
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+  }
+  @media (min-width: 1024px) {
+    .text-display-mega {
+      font-size: 96px;
+    }
+  }
+  .text-display-xl {
+    font-weight: 900;
+    font-size: 40px;
+    line-height: 1.1;
+    letter-spacing: -0.01em;
+  }
+  @media (min-width: 1024px) {
+    .text-display-xl {
+      font-size: 64px;
+    }
+  }
+  .text-display-md {
+    font-weight: 900;
+    font-size: 32px;
+    line-height: 1.1;
+  }
+  @media (min-width: 1024px) {
+    .text-display-md {
+      font-size: 40px;
+    }
+  }
+}

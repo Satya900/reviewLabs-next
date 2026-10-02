@@ -1,0 +1,27 @@
+name: Sync Google reviews
+
+# Vercel Hobby only allows daily crons declared in vercel.json, but this
+# endpoint (app/api/cron/sync-google-reviews/route.ts) just checks a bearer
+# token — it doesn't care who calls it. This workflow calls it every 15
+# minutes from GitHub Actions instead, so Phase 2's review sync stays
+# near-real-time without needing a Vercel Pro upgrade.
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch: {}
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call sync-google-reviews
+        run: |
+          status=$(curl -s -o /tmp/body.txt -w "%{http_code}" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "${{ vars.APP_URL }}/api/cron/sync-google-reviews")
+          echo "HTTP $status"
+          cat /tmp/body.txt
+          if [ "$status" -ge 400 ]; then
+            exit 1
+          fi

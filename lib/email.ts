@@ -143,3 +143,33 @@ export async function sendWeeklyDigestEmail(args: SendWeeklyDigestEmailArgs): Pr
   const { subject, text } = buildWeeklyDigestEmailBody(args);
   return sendViaResend({ to: args.to, fromName: "ReviewLabs", subject, text });
 }
+
+export type AuditLeadNotificationArgs = {
+  to: string;
+  businessName: string;
+  email: string;
+  score: number;
+  rating: number;
+  reviewCount: number;
+  recencyLabel: string;
+};
+
+// Internal ops notification, not customer/owner-facing copy — a plain
+// data summary so whoever's watching the inbox can follow up.
+function buildAuditLeadNotificationBody(args: AuditLeadNotificationArgs) {
+  const subject = `New audit lead: ${args.businessName}`;
+  const text = [
+    "A visitor finished the free review-health audit and asked for tips.",
+    "",
+    args.businessName,
+    `Email: ${args.email}`,
+    `Score: ${args.score}/100`,
+    `Rating: ${args.rating}, ${args.reviewCount} reviews, last review ${args.recencyLabel}`,
+  ].join("\n");
+  return { subject, text };
+}
+
+export async function sendAuditLeadNotification(args: AuditLeadNotificationArgs): Promise<SendResult> {
+  const { subject, text } = buildAuditLeadNotificationBody(args);
+  return sendViaResend({ to: args.to, fromName: "ReviewLabs Audit", subject, text });
+}

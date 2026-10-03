@@ -150,6 +150,17 @@ export type ReplyDraft = {
   created_at: string;
 };
 
+export type AuditLead = {
+  id: string;
+  business_name: string;
+  email: string;
+  rating: number;
+  review_count: number;
+  recency: string;
+  score: number;
+  created_at: string;
+};
+
 type TableDef<Row> = {
   Row: Row;
   Insert: Partial<Row>;
@@ -181,6 +192,7 @@ export type Database = {
       reply_settings: TableDef<ReplySettings>;
       google_reviews: TableDef<GoogleReview>;
       reply_drafts: TableDef<ReplyDraft>;
+      audit_leads: TableDef<AuditLead>;
     };
     Views: {
       businesses_public: ViewDef<BusinessPublic>;

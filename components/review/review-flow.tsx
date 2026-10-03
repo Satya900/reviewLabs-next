@@ -1,7 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
-import Script from "next/script";
+import { useState } from "react";
 import { Star, ExternalLink, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -9,17 +8,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { cn } from "cn";
 import type { Outlet } from "@/lib/supabase/types";
-
-declare global {
-  interface Window {
-    turnstile?: {
-      render: (container: HTMLElement, options: Record<string, unknown>) => string;
-      reset: (widgetId: string) => void;
-    };
-  }
-}
-
-const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
 
 export function ReviewFlow({ outlet, requestId }: { outlet: Outlet; requestId?: string | null }) {
   const [stars, setStars] = useState<number | null>(null);
@@ -31,20 +19,6 @@ export function ReviewFlow({ outlet, requestId }: { outlet: Outlet; requestId?: 
   const [ticketOpened, setTicketOpened] = useState<boolean | null>(null);
   const [whatWentWrong, setWhatWentWrong] = useState("");
   const [whatWouldFixIt, setWhatWouldFixIt] = useState("");
-  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
-  const widgetContainerRef = useRef<HTMLDivElement>(null);
-  const widgetIdRef = useRef<string | null>(null);
-
-  function renderTurnstileWidget() {
-    if (!window.turnstile || !widgetContainerRef.current || !TURNSTILE_SITE_KEY) return;
-    widgetIdRef.current = window.turnstile.render(widgetContainerRef.current, {
-      sitekey: TURNSTILE_SITE_KEY,
-      appearance: "interaction-only", // stay invisible unless Cloudflare needs a real challenge
-      callback: (token: string) => setTurnstileToken(token),
-      "expired-callback": () => setTurnstileToken(null),
-      "error-callback": () => setTurnstileToken(null),
-    });
-  }
 
   const googleUrl =
     outlet.google_maps_url ??
@@ -56,30 +30,16 @@ export function ReviewFlow({ outlet, requestId }: { outlet: Outlet; requestId?: 
     try {
       // One visit is one rating row: the first action creates it, a second
       // action (doing both Google and private) updates that same row via
-      // ratingId instead of inserting a duplicate. Turnstile tokens are
-      // single-use, so only the insert (no ratingId yet) sends one.
+      // ratingId instead of inserting a duplicate.
       const res = await fetch("/api/feedback", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          outletSlug: outlet.slug,
-          ratingId,
-          stars,
-          choseChannel,
-          answers,
-          requestId,
-          turnstileToken: ratingId ? undefined : turnstileToken,
-        }),
+        body: JSON.stringify({ outletSlug: outlet.slug, ratingId, stars, choseChannel, answers, requestId }),
       });
       const data = await res.json();
       if (data.ok) {
         setTicketOpened(data.ticketOpened);
         if (data.ratingId) setRatingId(data.ratingId);
-      } else if (window.turnstile && widgetIdRef.current) {
-        // Verification failed or the token was already used — reset so a
-        // retry gets a fresh one.
-        window.turnstile.reset(widgetIdRef.current);
-        setTurnstileToken(null);
       }
     } finally {
       setSubmitting(false);
@@ -103,17 +63,6 @@ export function ReviewFlow({ outlet, requestId }: { outlet: Outlet; requestId?: 
 
   return (
     <Card className="mx-auto w-full max-w-md p-8">
-      {TURNSTILE_SITE_KEY && (
-        <>
-          <Script
-            src="https://challenges.cloudflare.com/turnstile/v0/api.js"
-            strategy="lazyOnload"
-            onLoad={renderTurnstileWidget}
-          />
-          <div ref={widgetContainerRef} className="flex justify-center" />
-        </>
-      )}
-
       <p className="text-center text-sm font-semibold text-wise-mute">{outlet.name}</p>
       <h1 className="mt-2 text-center text-2xl font-bold text-wise-ink">
         How was your visit today?

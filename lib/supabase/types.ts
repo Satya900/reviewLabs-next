@@ -156,6 +156,16 @@ type TableDef<Row> = {
   Relationships: [];
 };
 
+type ViewDef<Row> = {
+  Row: Row;
+  Relationships: [];
+};
+
+// businesses_public (supabase/migrations/0004): id/name/slug/plan only,
+// never owner_user_id — the public-safe read surface for the businesses
+// table.
+export type BusinessPublic = Pick<Business, "id" | "name" | "slug" | "plan">;
+
 export type Database = {
   public: {
     Tables: {
@@ -171,7 +181,9 @@ export type Database = {
       google_reviews: TableDef<GoogleReview>;
       reply_drafts: TableDef<ReplyDraft>;
     };
-    Views: Record<string, never>;
+    Views: {
+      businesses_public: ViewDef<BusinessPublic>;
+    };
     Functions: Record<string, never>;
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;

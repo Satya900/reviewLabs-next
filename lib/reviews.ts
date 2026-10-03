@@ -17,8 +17,10 @@ export async function getPublicBusinessReviews(
 
   const supabase = createSupabaseAnonClient();
 
+  // businesses_public (supabase/migrations/0004) exposes only
+  // (id, name, slug, plan) — never owner_user_id — to anon callers.
   const { data: business } = await supabase
-    .from("businesses")
+    .from("businesses_public")
     .select("id,name,slug")
     .eq("slug", businessSlug)
     .single();

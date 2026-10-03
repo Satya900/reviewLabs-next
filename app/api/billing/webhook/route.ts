@@ -18,7 +18,16 @@ export async function POST(request: Request) {
   const signature = request.headers.get("x-razorpay-signature");
   const expectedSignature = crypto.createHmac("sha256", secret).update(rawBody).digest("hex");
 
-  if (!signature || signature !== expectedSignature) {
+  // Constant-time comparison — a plain !== leaks timing information an
+  // attacker could use to forge a valid signature byte by byte.
+  const expectedBuffer = Buffer.from(expectedSignature);
+  const signatureBuffer = signature ? Buffer.from(signature) : null;
+  const isValidSignature =
+    signatureBuffer !== null &&
+    signatureBuffer.length === expectedBuffer.length &&
+    crypto.timingSafeEqual(signatureBuffer, expectedBuffer);
+
+  if (!isValidSignature) {
     return NextResponse.json({ ok: false, error: "Invalid signature" }, { status: 400 });
   }
 

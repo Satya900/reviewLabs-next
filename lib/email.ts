@@ -15,7 +15,7 @@ type SendResult = { ok: true } | { ok: false; error: string };
 // Written to read like the outlet owner asking personally, not a marketing
 // template — run through /anthropic-skills:humanizer, since a generic-sounding
 // first draft is what landed a test send in Gmail's Promotions tab.
-function buildEmailBody(args: SendReviewRequestEmailArgs) {
+function buildRequestEmailBody(args: SendReviewRequestEmailArgs) {
   const greeting = args.customerName ? `Hi ${args.customerName},` : "Hi,";
   const subject = `Thanks for visiting ${args.outletName}`;
   const text = [
@@ -31,11 +31,29 @@ function buildEmailBody(args: SendReviewRequestEmailArgs) {
   return { subject, text };
 }
 
-export async function sendReviewRequestEmail(args: SendReviewRequestEmailArgs): Promise<SendResult> {
+// The one automatic follow-up (never more than one — see lib/reminders.ts)
+// for a request that's still 'sent' after REMINDER_DELAY_HOURS. Same
+// humanizer discipline as the first email.
+function buildReminderEmailBody(args: SendReviewRequestEmailArgs) {
+  const greeting = args.customerName ? `Hi ${args.customerName},` : "Hi,";
+  const subject = `Quick follow-up from ${args.outletName}`;
+  const text = [
+    greeting,
+    "",
+    "Just checking back in. If you get a minute, I'd still love to hear about your visit:",
+    args.reviewUrl,
+    "",
+    "No pressure, just didn't want this to get buried.",
+    "",
+    args.outletName,
+  ].join("\n");
+  return { subject, text };
+}
+
+async function sendViaResend(subject: string, text: string, args: SendReviewRequestEmailArgs): Promise<SendResult> {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) return { ok: false, error: "No email provider configured" };
 
-  const { subject, text } = buildEmailBody(args);
   try {
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
@@ -52,4 +70,14 @@ export async function sendReviewRequestEmail(args: SendReviewRequestEmailArgs): 
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : "Resend request failed" };
   }
+}
+
+export async function sendReviewRequestEmail(args: SendReviewRequestEmailArgs): Promise<SendResult> {
+  const { subject, text } = buildRequestEmailBody(args);
+  return sendViaResend(subject, text, args);
+}
+
+export async function sendReviewReminderEmail(args: SendReviewRequestEmailArgs): Promise<SendResult> {
+  const { subject, text } = buildReminderEmailBody(args);
+  return sendViaResend(subject, text, args);
 }

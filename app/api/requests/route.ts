@@ -7,7 +7,7 @@ import { sendReviewRequestEmail } from "@/lib/email";
 import { buildWaMeLink } from "@/lib/utils/whatsapp";
 import { mockOutlet } from "@/lib/mock-data";
 
-const payloadSchema = z
+export const payloadSchema = z
   .object({
     outletId: z.string().min(1),
     channel: z.enum(["email", "whatsapp"]),

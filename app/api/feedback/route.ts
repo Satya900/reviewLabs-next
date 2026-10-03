@@ -3,7 +3,7 @@ import { z } from "zod";
 import { hasSupabaseEnv } from "@/lib/supabase/env";
 import { createSupabaseAnonClient } from "@/lib/supabase/anon";
 
-const payloadSchema = z.object({
+export const payloadSchema = z.object({
   outletSlug: z.string().min(1),
   // When set, this call updates the rating created by the customer's first
   // action (Google or private) instead of inserting a second row — one

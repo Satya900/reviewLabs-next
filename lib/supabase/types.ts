@@ -73,6 +73,7 @@ export type PrivateFeedback = {
   rating_id: string;
   outlet_id: string;
   answers: Record<string, string>;
+  theme: string | null;
   created_at: string;
 };
 

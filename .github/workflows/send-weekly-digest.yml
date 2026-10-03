@@ -1,0 +1,26 @@
+name: Send weekly digest
+
+# Same GitHub Actions workaround as tag-feedback-themes.yml and
+# sync-google-reviews.yml — Vercel Hobby's 2-cron cap is already spoken
+# for. Runs Monday mornings UTC, after themes have had all week (daily
+# tagging) to catch up on any backlog.
+
+on:
+  schedule:
+    - cron: "0 9 * * 1"
+  workflow_dispatch: {}
+
+jobs:
+  digest:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call send-weekly-digest
+        run: |
+          status=$(curl -s -o /tmp/body.txt -w "%{http_code}" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "${{ vars.APP_URL }}/api/cron/send-weekly-digest")
+          echo "HTTP $status"
+          cat /tmp/body.txt
+          if [ "$status" -ge 400 ]; then
+            exit 1
+          fi

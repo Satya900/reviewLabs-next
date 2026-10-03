@@ -1,0 +1,28 @@
+name: Tag feedback themes
+
+# Vercel Hobby is already at its 2-cron cap (sync-google-reviews,
+# send-request-reminders in vercel.json), so this runs via GitHub Actions
+# instead — same bearer-token-protected endpoint pattern as
+# sync-google-reviews.yml. Daily, decoupled from the weekly digest's own
+# cadence, so a backlog item sits untagged for at most a day rather than
+# up to a week.
+
+on:
+  schedule:
+    - cron: "0 2 * * *"
+  workflow_dispatch: {}
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call tag-feedback-themes
+        run: |
+          status=$(curl -s -o /tmp/body.txt -w "%{http_code}" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "${{ vars.APP_URL }}/api/cron/tag-feedback-themes")
+          echo "HTTP $status"
+          cat /tmp/body.txt
+          if [ "$status" -ge 400 ]; then
+            exit 1
+          fi

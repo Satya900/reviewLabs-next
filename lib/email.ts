@@ -50,7 +50,12 @@ function buildReminderEmailBody(args: SendReviewRequestEmailArgs) {
   return { subject, text };
 }
 
-async function sendViaResend(subject: string, text: string, args: SendReviewRequestEmailArgs): Promise<SendResult> {
+async function sendViaResend(args: {
+  to: string;
+  fromName: string;
+  subject: string;
+  text: string;
+}): Promise<SendResult> {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) return { ok: false, error: "No email provider configured" };
 
@@ -59,10 +64,10 @@ async function sendViaResend(subject: string, text: string, args: SendReviewRequ
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
       body: JSON.stringify({
-        from: `${args.outletName} <${process.env.EMAIL_FROM_ADDRESS || "reviews@reviewlabs.space"}>`,
+        from: `${args.fromName} <${process.env.EMAIL_FROM_ADDRESS || "reviews@reviewlabs.space"}>`,
         to: [args.to],
-        subject,
-        text,
+        subject: args.subject,
+        text: args.text,
       }),
     });
     if (!res.ok) return { ok: false, error: `Resend: ${await res.text()}` };
@@ -74,10 +79,67 @@ async function sendViaResend(subject: string, text: string, args: SendReviewRequ
 
 export async function sendReviewRequestEmail(args: SendReviewRequestEmailArgs): Promise<SendResult> {
   const { subject, text } = buildRequestEmailBody(args);
-  return sendViaResend(subject, text, args);
+  return sendViaResend({ to: args.to, fromName: args.outletName, subject, text });
 }
 
 export async function sendReviewReminderEmail(args: SendReviewRequestEmailArgs): Promise<SendResult> {
   const { subject, text } = buildReminderEmailBody(args);
-  return sendViaResend(subject, text, args);
+  return sendViaResend({ to: args.to, fromName: args.outletName, subject, text });
+}
+
+export type DigestOutletSection = {
+  outletName: string;
+  ratingsCount: number;
+  avgStars: number | null;
+  ticketsOpened: number;
+  ticketsResolved: number;
+  topThemes: { label: string; count: number }[];
+};
+
+export type SendWeeklyDigestEmailArgs = {
+  to: string;
+  businessName: string;
+  outlets: DigestOutletSection[];
+  dashboardUrl: string;
+};
+
+// Recurring automated report, not a one-time personal ask like the request/
+// reminder emails above — reads like a crisp status report rather than a
+// person writing, since that's what it actually is. Still run through
+// /anthropic-skills:humanizer; owner-facing copy is still copy.
+function buildWeeklyDigestEmailBody(args: SendWeeklyDigestEmailArgs) {
+  const subject = `Your week at ${args.businessName}`;
+
+  const outletBlocks = args.outlets.map((o) => {
+    const avgStarsText = o.avgStars !== null ? `${o.avgStars.toFixed(1)} average` : "no average yet";
+    const topThemesLine =
+      o.topThemes.length > 0
+        ? o.topThemes.map((t) => `${t.label} (${t.count})`).join(", ")
+        : "No recurring themes yet";
+
+    return [
+      o.outletName,
+      `${o.ratingsCount} new ratings (${avgStarsText}), ${o.ticketsOpened} tickets opened and ${o.ticketsResolved} resolved`,
+      `Top themes: ${topThemesLine}`,
+    ].join("\n");
+  });
+
+  const text = [
+    "Hi,",
+    "",
+    "Here's the rundown for the past week.",
+    "",
+    outletBlocks.join("\n\n"),
+    "",
+    `Full breakdown: ${args.dashboardUrl}`,
+    "",
+    "ReviewLabs",
+  ].join("\n");
+
+  return { subject, text };
+}
+
+export async function sendWeeklyDigestEmail(args: SendWeeklyDigestEmailArgs): Promise<SendResult> {
+  const { subject, text } = buildWeeklyDigestEmailBody(args);
+  return sendViaResend({ to: args.to, fromName: "ReviewLabs", subject, text });
 }

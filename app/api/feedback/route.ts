@@ -13,6 +13,13 @@ const payloadSchema = z.object({
   choseChannel: z.enum(["google", "private", "both", "none"]),
   answers: z.record(z.string(), z.string()).optional(),
   publicComment: z.string().trim().max(500).optional(),
+  // Set only on the first POST for a visit, from the ?req= param on
+  // /r/{slug}. Links this rating — and, via the DB trigger
+  // trg_complete_request_on_rating, the originating requests row — back to
+  // the email/WhatsApp ask that produced it. Not a strict UUID: demo mode
+  // (app/api/requests/route.ts) sends the literal "demo-request" here, same
+  // placeholder convention as ratingId's "demo-rating".
+  requestId: z.string().nullish(),
 });
 
 export async function POST(request: Request) {
@@ -23,7 +30,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const { outletSlug, ratingId, stars, choseChannel, answers, publicComment } = parsed.data;
+  const { outletSlug, ratingId, stars, choseChannel, answers, publicComment, requestId } = parsed.data;
   const ticketOpened = stars < 4;
 
   if (!hasSupabaseEnv) {
@@ -47,16 +54,29 @@ export async function POST(request: Request) {
   let finalRatingId = ratingId;
 
   if (!finalRatingId) {
-    const { data: rating, error: ratingError } = await supabase
-      .from("ratings")
-      .insert({
-        outlet_id: outlet.id,
-        stars,
-        chose_channel: choseChannel,
-        public_comment: publicComment || null,
-      })
-      .select("id")
-      .single();
+    const insertRating = (requestIdToUse: string | null) =>
+      supabase
+        .from("ratings")
+        .insert({
+          outlet_id: outlet.id,
+          request_id: requestIdToUse,
+          stars,
+          chose_channel: choseChannel,
+          public_comment: publicComment || null,
+        })
+        .select("id")
+        .single();
+
+    let { data: rating, error: ratingError } = await insertRating(requestId ?? null);
+
+    // A stale/tampered or non-UUID ?req= (deleted request, wrong id, the
+    // demo-mode "demo-request" placeholder reaching a real project) trips
+    // either a foreign-key violation (23503) or an invalid-UUID-syntax
+    // error (22P02) — retry without it rather than blocking the customer's
+    // submission over a cosmetic linkage.
+    if (ratingError && ["23503", "22P02"].includes(ratingError.code ?? "")) {
+      ({ data: rating, error: ratingError } = await insertRating(null));
+    }
 
     if (ratingError || !rating) {
       return NextResponse.json({ ok: false, error: "Could not save rating" }, { status: 500 });
@@ -77,8 +97,8 @@ export async function POST(request: Request) {
     });
   }
 
-  // Ticket creation for stars < 4 happens via the DB trigger
-  // (fn_open_ticket_for_low_rating) defined in supabase/migrations, fired
-  // only on the initial insert above — so it opens exactly once per visit.
+  // Ticket creation (stars < 4) and request-completion (request_id set) both
+  // happen via DB triggers fired only on the initial insert above, so each
+  // fires exactly once per visit.
   return NextResponse.json({ ok: true, ticketOpened, demo: false, ratingId: finalRatingId });
 }

@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { cn } from "cn";
 import type { Outlet } from "@/lib/supabase/types";
 
-export function ReviewFlow({ outlet }: { outlet: Outlet }) {
+export function ReviewFlow({ outlet, requestId }: { outlet: Outlet; requestId?: string | null }) {
   const [stars, setStars] = useState<number | null>(null);
   const [ratingId, setRatingId] = useState<string | null>(null);
   const [googleDone, setGoogleDone] = useState(false);
@@ -34,7 +34,7 @@ export function ReviewFlow({ outlet }: { outlet: Outlet }) {
       const res = await fetch("/api/feedback", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ outletSlug: outlet.slug, ratingId, stars, choseChannel, answers }),
+        body: JSON.stringify({ outletSlug: outlet.slug, ratingId, stars, choseChannel, answers, requestId }),
       });
       const data = await res.json();
       if (data.ok) {

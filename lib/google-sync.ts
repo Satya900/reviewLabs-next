@@ -6,7 +6,7 @@ import {
   starWordToStars,
 } from "@/lib/google";
 import { draftReply } from "@/lib/ai/reply-draft";
-import type { GoogleConnection, ReplySettings, Ticket } from "@/lib/supabase/types";
+import type { GoogleConnection, ReplySettings, ReviewRequest, Ticket } from "@/lib/supabase/types";
 
 async function getValidAccessToken(connection: GoogleConnection): Promise<string> {
   const expiresInMs = new Date(connection.token_expires_at).getTime() - Date.now();
@@ -49,6 +49,45 @@ async function findGroundingTicket(
   const rows = (candidateTickets ?? []) as unknown as (Ticket & { ratings: { stars: number } | null })[];
   const match = rows.find((t) => t.ratings?.stars === stars);
   return match ?? null;
+}
+
+// Best-effort match back to the requests row that likely produced this
+// review (the other half of PHASES.md Phase 2's request<->review
+// correlation — see supabase/migrations/0003 for the ReviewLabs-own-page
+// half). Google shares no identifying link, so this is a heuristic over
+// the email/WhatsApp requests sent in the weeks before the review landed,
+// not a guarantee. Requests already 'completed' — by this function on an
+// earlier sync, or by the migration 0003 trigger — are excluded so one
+// request can't be double-matched to two different reviews.
+async function findMatchingRequest(
+  outletId: string,
+  reviewerName: string | null,
+  reviewCreateTime: string
+): Promise<ReviewRequest | null> {
+  const supabase = createSupabaseServiceRoleClient();
+  const windowStart = new Date(new Date(reviewCreateTime).getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
+
+  const { data: candidateRequests } = await supabase
+    .from("requests")
+    .select("*")
+    .eq("outlet_id", outletId)
+    .in("channel", ["email", "whatsapp"])
+    .neq("status", "completed")
+    .gte("created_at", windowStart)
+    .lte("created_at", reviewCreateTime)
+    .order("created_at", { ascending: false });
+
+  const candidates = (candidateRequests ?? []) as ReviewRequest[];
+  if (candidates.length === 0) return null;
+
+  if (reviewerName) {
+    const nameMatch = candidates.find(
+      (r) => r.customer_name && r.customer_name.toLowerCase() === reviewerName.toLowerCase()
+    );
+    if (nameMatch) return nameMatch;
+  }
+
+  return candidates[0]; // most recent request in the window, as a weak fallback guess
 }
 
 export async function syncOutletReviews(outletId: string): Promise<{ synced: number; drafted: number; autoPublished: number }> {
@@ -105,6 +144,19 @@ export async function syncOutletReviews(outletId: string): Promise<{ synced: num
 
     if (!googleReviewRowId) {
       const groundingTicket = await findGroundingTicket(outletId, stars, review.createTime);
+      const matchedRequest = await findMatchingRequest(outletId, review.reviewer?.displayName ?? null, review.createTime);
+
+      let matchedRatingId: string | null = null;
+      if (matchedRequest) {
+        const { data: linkedRating } = await supabase
+          .from("ratings")
+          .select("id")
+          .eq("request_id", matchedRequest.id)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        matchedRatingId = linkedRating?.id ?? null;
+      }
 
       const { data: inserted } = await supabase
         .from("google_reviews")
@@ -116,7 +168,8 @@ export async function syncOutletReviews(outletId: string): Promise<{ synced: num
           review_text: review.comment ?? null,
           google_create_time: review.createTime,
           google_update_time: review.updateTime,
-          matched_rating_id: null,
+          matched_request_id: matchedRequest?.id ?? null,
+          matched_rating_id: matchedRatingId,
           has_owner_reply: Boolean(review.reviewReply),
         })
         .select("id")
@@ -125,6 +178,10 @@ export async function syncOutletReviews(outletId: string): Promise<{ synced: num
       if (!inserted) continue;
       googleReviewRowId = inserted.id;
       synced += 1;
+
+      if (matchedRequest) {
+        await supabase.from("requests").update({ status: "completed" }).eq("id", matchedRequest.id);
+      }
 
       if (!review.reviewReply) {
         const draft = await draftReply({

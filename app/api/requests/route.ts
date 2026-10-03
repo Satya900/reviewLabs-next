@@ -39,7 +39,7 @@ export async function POST(request: Request) {
   if (!hasSupabaseEnv) {
     // Demo mode: no persistence, but a WhatsApp link still builds for real
     // so the flow is fully clickable without a Supabase project.
-    const reviewUrl = `${appUrl}/r/${mockOutlet.slug}`;
+    const reviewUrl = `${appUrl}/r/${mockOutlet.slug}?req=demo-request`;
     const waLink =
       channel === "whatsapp"
         ? buildWaMeLink(customerContact, requestMessage(customerName, mockOutlet.name, reviewUrl))
@@ -70,7 +70,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: created.error }, { status: 500 });
   }
 
-  const reviewUrl = `${appUrl}/r/${outlet.slug}`;
+  const reviewUrl = `${appUrl}/r/${outlet.slug}?req=${created.id}`;
 
   if (channel === "whatsapp") {
     const waLink = buildWaMeLink(customerContact, requestMessage(customerName, outlet.name, reviewUrl));

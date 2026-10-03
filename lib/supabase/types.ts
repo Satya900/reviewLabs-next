@@ -168,6 +168,12 @@ export type ReplySeoKeyword = {
   created_at: string;
 };
 
+export type OutletWebhook = {
+  outlet_id: string;
+  secret: string;
+  created_at: string;
+};
+
 type TableDef<Row> = {
   Row: Row;
   Insert: Partial<Row>;
@@ -201,6 +207,7 @@ export type Database = {
       reply_drafts: TableDef<ReplyDraft>;
       audit_leads: TableDef<AuditLead>;
       reply_seo_keywords: TableDef<ReplySeoKeyword>;
+      outlet_webhooks: TableDef<OutletWebhook>;
     };
     Views: {
       businesses_public: ViewDef<BusinessPublic>;

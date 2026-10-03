@@ -4,9 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { getOwnerOutletConnection } from "@/lib/replies";
 import { getOutletSeoKeywords } from "@/lib/reply-seo";
+import { getOrCreateOutletWebhookSecret } from "@/lib/outlet-webhooks";
 import { hasGoogleEnv } from "@/lib/google";
 import { ReplySettingsForm } from "@/components/dashboard/reply-settings-form";
 import { ReplySeoForm } from "@/components/dashboard/reply-seo-form";
+import { WebhookSettings } from "@/components/dashboard/webhook-settings";
 import { SyncGoogleButton } from "@/components/dashboard/sync-google-button";
 
 export default async function SettingsPage({
@@ -17,6 +19,10 @@ export default async function SettingsPage({
   const { connected, error } = await searchParams;
   const data = await getOwnerOutletConnection();
   const seoKeywords = data ? await getOutletSeoKeywords(data.outlet.id) : [];
+  const webhookSecret = data ? await getOrCreateOutletWebhookSecret(data.outlet.id) : null;
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+  const webhookUrl =
+    data && webhookSecret ? `${appUrl}/api/webhooks/booking/${data.outlet.id}?secret=${webhookSecret}` : null;
 
   return (
     <div className="max-w-xl">
@@ -79,6 +85,15 @@ export default async function SettingsPage({
         <p className="mb-4 font-semibold text-wise-ink">Reply SEO keywords</p>
         {data ? (
           <ReplySeoForm outletId={data.outlet.id} initialKeywords={seoKeywords} />
+        ) : (
+          <p className="text-sm text-wise-mute">Connect Supabase and sign in to manage this.</p>
+        )}
+      </Card>
+
+      <Card className="mt-4 p-6">
+        <p className="mb-4 font-semibold text-wise-ink">Booking webhook</p>
+        {data && webhookUrl ? (
+          <WebhookSettings outletId={data.outlet.id} initialWebhookUrl={webhookUrl} baseUrl={appUrl} />
         ) : (
           <p className="text-sm text-wise-mute">Connect Supabase and sign in to manage this.</p>
         )}

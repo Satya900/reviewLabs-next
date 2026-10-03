@@ -1,7 +1,7 @@
 // Local fallback data so `npm run dev` renders every Phase 1 page without a
 // live Supabase project. Swap for real queries once NEXT_PUBLIC_SUPABASE_URL
 // is set (see lib/supabase/env.ts + .env.example).
-import type { Outlet, Rating, Ticket } from "./supabase/types";
+import type { Outlet, Rating, Ticket, ReviewRequest } from "./supabase/types";
 
 export const mockBusiness = {
   id: "b_demo",
@@ -66,5 +66,28 @@ export const mockTickets: (Ticket & { customerLabel: string; stars: number })[] 
     created_at: "2026-09-15T09:00:00Z",
     customerLabel: "P. — 2★, front desk felt rushed",
     stars: 2,
+  },
+];
+
+export const mockRequests: ReviewRequest[] = [
+  {
+    id: "req1",
+    outlet_id: "o_demo",
+    channel: "whatsapp",
+    customer_name: "Aditi",
+    customer_contact: "9876543210",
+    status: "sent",
+    reminder_sent_at: null,
+    created_at: "2026-09-29T11:00:00Z",
+  },
+  {
+    id: "req2",
+    outlet_id: "o_demo",
+    channel: "email",
+    customer_name: "Rohan",
+    customer_contact: "rohan@example.com",
+    status: "completed",
+    reminder_sent_at: null,
+    created_at: "2026-09-27T09:30:00Z",
   },
 ];

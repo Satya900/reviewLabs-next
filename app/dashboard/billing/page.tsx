@@ -46,6 +46,10 @@ export default async function BillingPage() {
               Razorpay isn&apos;t configured yet. Add RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET, and
               RAZORPAY_PLAN_ID_STARTER to .env to enable checkout.
             </p>
+          ) : subscription && subscription.status !== "cancelled" ? (
+            <p className="text-sm text-wise-mute">
+              Your plan renews automatically. To cancel or change it, contact support.
+            </p>
           ) : (
             <BillingPanel />
           )}

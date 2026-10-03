@@ -35,6 +35,22 @@ export async function POST() {
     return NextResponse.json({ ok: false, error: "No business found for this account" }, { status: 404 });
   }
 
+  // Block a second subscription while one is already open — only a
+  // cancelled (or absent) subscription may start a new one. Without this,
+  // a double-click or a stale page would create a duplicate Razorpay
+  // subscription and double-charge the business.
+  const { data: existing } = await supabase
+    .from("subscriptions")
+    .select("status")
+    .eq("business_id", business.id)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (existing && existing.status !== "cancelled") {
+    return NextResponse.json({ ok: false, error: "A subscription already exists for this business" }, { status: 409 });
+  }
+
   const razorpay = getRazorpayClient();
   const subscription = await razorpay.subscriptions.create({
     plan_id: process.env.RAZORPAY_PLAN_ID_STARTER!,

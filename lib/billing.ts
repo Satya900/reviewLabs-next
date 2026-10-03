@@ -22,13 +22,15 @@ export async function getOwnerSubscription(): Promise<{ subscription: Subscripti
     .maybeSingle();
   if (!business) return { subscription: null, demo: false };
 
+  // A business has no subscription row until it first checks out —
+  // .single() throws on zero rows, so .maybeSingle() instead.
   const { data: subscription } = await supabase
     .from("subscriptions")
     .select("*")
     .eq("business_id", business.id)
     .order("created_at", { ascending: false })
     .limit(1)
-    .single();
+    .maybeSingle();
 
   return { subscription: subscription ?? null, demo: false };
 }

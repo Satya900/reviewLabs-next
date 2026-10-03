@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Ticket, Users, QrCode, Send, CreditCard, MessageSquareText, Settings, Tags } from "lucide-react";
+import { Ticket, Users, QrCode, Send, CreditCard, MessageSquareText, Settings, Tags, BarChart3 } from "lucide-react";
 import { hasSupabaseEnv } from "@/lib/supabase/env";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getOwnerBusinessId } from "@/lib/business";
@@ -10,6 +10,7 @@ const navItems = [
   { href: "/dashboard/replies", label: "Reply drafts", icon: MessageSquareText },
   { href: "/dashboard/crm", label: "Customers", icon: Users },
   { href: "/dashboard/themes", label: "Themes", icon: Tags },
+  { href: "/dashboard/outlets", label: "Outlets", icon: BarChart3 },
   { href: "/dashboard/qr", label: "QR kit", icon: QrCode },
   { href: "/dashboard/requests", label: "Requests", icon: Send },
   { href: "/dashboard/billing", label: "Billing", icon: CreditCard },

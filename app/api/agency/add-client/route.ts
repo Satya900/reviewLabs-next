@@ -10,6 +10,10 @@ const payloadSchema = z.object({
   address: z.string().trim().optional(),
 });
 
+// Same shape as /api/onboarding, deliberately without its "Business already
+// exists" 409 — this route exists specifically to add a second (or third,
+// or Nth) business under the same owner, for the agency console's
+// per-client grouping.
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
   const parsed = payloadSchema.safeParse(body);
@@ -20,13 +24,6 @@ export async function POST(request: Request) {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ ok: false, error: "Not signed in" }, { status: 401 });
-
-  const { data: existing } = await supabase
-    .from("businesses")
-    .select("id")
-    .eq("owner_user_id", user.id)
-    .maybeSingle();
-  if (existing) return NextResponse.json({ ok: false, error: "Business already exists" }, { status: 409 });
 
   const { businessName, outletName, address } = parsed.data;
 
@@ -51,10 +48,19 @@ export async function POST(request: Request) {
       slugify(outletName)
     );
 
+    // This is the moment the owner's whole portfolio switches into
+    // agency/white-label mode — flips every business they have, including
+    // the one just created, not just new ones going forward. No payment
+    // step: Razorpay isn't configured with real keys yet, so this is a
+    // free/unmetered soft-upgrade for this phase (subscriptions rows are
+    // untouched, so businesses.plan and subscriptions.plan can diverge —
+    // the add-client-form copy states this consequence to the owner).
+    await supabase.from("businesses").update({ plan: "agency" }).eq("owner_user_id", user.id);
+
     return NextResponse.json({ ok: true, businessId: business.id, outletId: outlet.id });
   } catch (err) {
     return NextResponse.json(
-      { ok: false, error: err instanceof Error ? err.message : "Onboarding failed" },
+      { ok: false, error: err instanceof Error ? err.message : "Could not add client" },
       { status: 500 }
     );
   }

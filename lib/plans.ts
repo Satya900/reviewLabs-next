@@ -80,3 +80,11 @@ export function formatPrice(amount: number, currency: "INR" | "USD") {
     maximumFractionDigits: 0,
   }).format(amount);
 }
+
+// Consolidated monthly total across every outlet an agency owner has,
+// regardless of which of their businesses each outlet belongs to — the
+// "₹599/outlet" pricing PHASES.md describes for the Agency plan.
+export function computeAgencyMonthlyTotal(totalOutlets: number, plan: PlanDefinition): number {
+  if (totalOutlets <= 0) return 0;
+  return plan.priceFirstOutlet + Math.max(0, totalOutlets - 1) * plan.priceExtraOutlet;
+}

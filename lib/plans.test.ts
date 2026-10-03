@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { formatPrice, plans } from "./plans";
+import { computeAgencyMonthlyTotal, formatPrice, plans } from "./plans";
+
+const agencyPlan = plans.find((p) => p.id === "agency")!;
 
 describe("formatPrice", () => {
   it("formats INR with no decimal places", () => {
@@ -30,5 +32,26 @@ describe("plans", () => {
   it("prices Global in USD for the US/UK/UAE markets", () => {
     const global = plans.find((p) => p.id === "global");
     expect(global?.currency).toBe("USD");
+  });
+});
+
+describe("computeAgencyMonthlyTotal", () => {
+  it("returns 0 for zero outlets", () => {
+    expect(computeAgencyMonthlyTotal(0, agencyPlan)).toBe(0);
+  });
+
+  it("returns exactly priceFirstOutlet for a single outlet", () => {
+    expect(computeAgencyMonthlyTotal(1, agencyPlan)).toBe(agencyPlan.priceFirstOutlet);
+  });
+
+  it("computes the first-outlet-plus-extras total at the PRD's 25-outlet threshold", () => {
+    expect(computeAgencyMonthlyTotal(25, agencyPlan)).toBe(599 + 24 * 599);
+  });
+
+  it("is exactly 599 * totalOutlets for the Agency tier specifically, since its first and extra prices are equal", () => {
+    expect(agencyPlan.priceFirstOutlet).toBe(agencyPlan.priceExtraOutlet);
+    for (const n of [1, 5, 25, 50]) {
+      expect(computeAgencyMonthlyTotal(n, agencyPlan)).toBe(599 * n);
+    }
   });
 });

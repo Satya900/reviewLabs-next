@@ -15,9 +15,10 @@ export async function generateMetadata({
   const { business } = await params;
   const data = await getPublicBusinessReviews(business);
   if (!data) return {};
+  const publisher = data.business.plan === "agency" ? data.business.name : "ReviewLabs";
   return {
     title: `${data.business.name}: Reviews`,
-    description: `Real customer ratings for ${data.business.name}, collected and published by ReviewLabs. Every rating stays visible, including the low ones.`,
+    description: `Real customer ratings for ${data.business.name}, collected and published by ${publisher}. Every rating stays visible, including the low ones.`,
   };
 }
 
@@ -34,6 +35,8 @@ export default async function PublicReviewsPage({
   const { business, ratings } = data;
   const count = ratings.length;
   const average = count === 0 ? 0 : ratings.reduce((sum, r) => sum + r.stars, 0) / count;
+  const whiteLabeled = business.plan === "agency";
+  const publisher = whiteLabeled ? business.name : "ReviewLabs";
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -57,7 +60,13 @@ export default async function PublicReviewsPage({
 
   return (
     <>
-      <SiteHeader />
+      {whiteLabeled ? (
+        <header className="border-b border-foreground/5 bg-card px-6 py-5">
+          <p className="mx-auto max-w-[1200px] text-lg font-extrabold text-wise-ink">{business.name}</p>
+        </header>
+      ) : (
+        <SiteHeader />
+      )}
       <main className="flex-1 px-6 py-12">
         {/* Structured data so this page is crawlable independent of Google */}
         <script
@@ -83,7 +92,7 @@ export default async function PublicReviewsPage({
             </span>
           </div>
           <p className="mt-2 text-sm text-wise-mute">
-            Every rating collected through ReviewLabs is shown here, including the low ones.
+            Every rating collected through {publisher} is shown here, including the low ones.
             Ratings are never filtered by score.
           </p>
 
@@ -121,7 +130,13 @@ export default async function PublicReviewsPage({
           </div>
         </div>
       </main>
-      <SiteFooter />
+      {whiteLabeled ? (
+        <footer className="bg-wise-ink px-6 py-8 text-center text-xs text-wise-canvas-soft/70">
+          © {new Date().getFullYear()} {business.name}
+        </footer>
+      ) : (
+        <SiteFooter />
+      )}
     </>
   );
 }

@@ -2,12 +2,18 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { BillingPanel } from "@/components/dashboard/billing-panel";
 import { getOwnerSubscription } from "@/lib/billing";
+import { getOwnerAgencyClients } from "@/lib/agency";
 import { hasRazorpayEnv } from "@/lib/razorpay";
-import { plans, formatPrice } from "@/lib/plans";
+import { plans, formatPrice, computeAgencyMonthlyTotal } from "@/lib/plans";
 
 export default async function BillingPage() {
   const { subscription, demo } = await getOwnerSubscription();
+  const { clients, isAgency } = await getOwnerAgencyClients();
   const starter = plans[0];
+  const agencyPlan = plans.find((p) => p.id === "agency")!;
+
+  const totalOutlets = clients.reduce((sum, c) => sum + c.outlets.length, 0);
+  const agencyTotal = computeAgencyMonthlyTotal(totalOutlets, agencyPlan);
 
   return (
     <div className="max-w-xl">
@@ -45,6 +51,32 @@ export default async function BillingPage() {
           )}
         </div>
       </Card>
+
+      {isAgency && (
+        <Card className="mt-4 p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-semibold text-wise-ink">Agency pricing</p>
+              <p className="text-sm text-wise-mute">
+                {totalOutlets} outlet{totalOutlets === 1 ? "" : "s"} across {clients.length}{" "}
+                businesses, {formatPrice(agencyTotal, agencyPlan.currency)}/mo at{" "}
+                {formatPrice(agencyPlan.priceFirstOutlet, agencyPlan.currency)}/outlet
+              </p>
+            </div>
+            <Badge variant="outline">Reference only</Badge>
+          </div>
+          {totalOutlets < 25 && (
+            <p className="mt-4 text-sm text-wise-mute">
+              Agency pricing applies at 25+ outlets across your businesses — you currently have{" "}
+              {totalOutlets}.
+            </p>
+          )}
+          <p className="mt-4 text-sm text-wise-mute">
+            Consolidated Agency checkout isn&apos;t wired up yet — this is a preview of what
+            you&apos;d pay, not a live subscription.
+          </p>
+        </Card>
+      )}
     </div>
   );
 }

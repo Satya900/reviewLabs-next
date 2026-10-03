@@ -1,6 +1,18 @@
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 import { ReviewFlow } from "@/components/review/review-flow";
 import { getOutletBySlug } from "@/lib/outlets";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const outlet = await getOutletBySlug(slug);
+  if (!outlet) return {};
+  return { title: outlet.name };
+}
 
 export default async function ReviewPage({
   params,

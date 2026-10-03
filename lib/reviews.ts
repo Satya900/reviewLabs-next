@@ -1,10 +1,10 @@
 import { hasSupabaseEnv } from "./supabase/env";
 import { createSupabaseAnonClient } from "./supabase/anon";
 import { mockBusiness, mockPublicRatings } from "./mock-data";
-import type { Rating } from "./supabase/types";
+import type { PlanTier, Rating } from "./supabase/types";
 
 export interface PublicBusinessReviews {
-  business: { id: string; name: string; slug: string };
+  business: { id: string; name: string; slug: string; plan: PlanTier };
   ratings: Rating[];
 }
 
@@ -21,7 +21,7 @@ export async function getPublicBusinessReviews(
   // (id, name, slug, plan) — never owner_user_id — to anon callers.
   const { data: business } = await supabase
     .from("businesses_public")
-    .select("id,name,slug")
+    .select("id,name,slug,plan")
     .eq("slug", businessSlug)
     .single();
 

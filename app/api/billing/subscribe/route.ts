@@ -21,11 +21,15 @@ export async function POST() {
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ ok: false, error: "Not signed in" }, { status: 401 });
 
+  // An agency owner can have multiple businesses — .single() throws on
+  // zero or 2+ rows, so order+limit to deterministically pick the oldest.
   const { data: business } = await supabase
     .from("businesses")
     .select("id")
     .eq("owner_user_id", user.id)
-    .single();
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
 
   if (!business) {
     return NextResponse.json({ ok: false, error: "No business found for this account" }, { status: 404 });

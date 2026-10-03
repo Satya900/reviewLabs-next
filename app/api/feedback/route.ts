@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { hasSupabaseEnv } from "@/lib/supabase/env";
 import { createSupabaseAnonClient } from "@/lib/supabase/anon";
+import { hasTurnstileEnv, verifyTurnstileToken } from "@/lib/turnstile";
 
 const payloadSchema = z.object({
   outletSlug: z.string().min(1),
@@ -20,6 +21,10 @@ const payloadSchema = z.object({
   // (app/api/requests/route.ts) sends the literal "demo-request" here, same
   // placeholder convention as ratingId's "demo-rating".
   requestId: z.string().nullish(),
+  // Required (when TURNSTILE_SECRET_KEY is set) only on the first POST for a
+  // visit — the token is single-use, so the second action (e.g. "both") never
+  // sends a new one.
+  turnstileToken: z.string().nullish(),
 });
 
 export async function POST(request: Request) {
@@ -30,7 +35,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const { outletSlug, ratingId, stars, choseChannel, answers, publicComment, requestId } = parsed.data;
+  const { outletSlug, ratingId, stars, choseChannel, answers, publicComment, requestId, turnstileToken } =
+    parsed.data;
   const ticketOpened = stars < 4;
 
   if (!hasSupabaseEnv) {
@@ -54,6 +60,14 @@ export async function POST(request: Request) {
   let finalRatingId = ratingId;
 
   if (!finalRatingId) {
+    if (hasTurnstileEnv) {
+      const remoteIp = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null;
+      const verified = turnstileToken ? await verifyTurnstileToken(turnstileToken, remoteIp) : false;
+      if (!verified) {
+        return NextResponse.json({ ok: false, error: "Verification failed. Please try again." }, { status: 403 });
+      }
+    }
+
     const insertRating = (requestIdToUse: string | null) =>
       supabase
         .from("ratings")

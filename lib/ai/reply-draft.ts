@@ -14,6 +14,11 @@ export interface DraftReplyInput {
   reviewText: string | null;
   fixNote: string | null;
   language: ReplyLanguage;
+  // Reply SEO add-on (PHASES.md Phase 3, lib/reply-seo.ts): service/area
+  // terms to work into the OWNER'S reply when they fit naturally. Never
+  // applied to customer review text — this input only ever flows into the
+  // system prompt below, and draftReply only ever writes draft_text.
+  seoKeywords?: string[];
 }
 
 // The differentiator the PRD names explicitly: a draft that can truthfully
@@ -30,7 +35,12 @@ export async function draftReply(
       : "No specific fix is on file: thank the customer sincerely without inventing a fix that wasn't made.",
     "Keep the whole reply under 60 words. Sign off warmly but without excess exclamation points.",
     "Never promise something the business didn't actually do.",
-  ].join(" ");
+    input.seoKeywords && input.seoKeywords.length > 0
+      ? `If one of these phrases is genuinely relevant to what this review is about, use that exact phrase once, word for word, rather than paraphrasing it: ${input.seoKeywords.join(", ")}. A paraphrase doesn't count and defeats the point. If none of them are relevant, don't use any of them — never force an unrelated phrase in.`
+      : null,
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   const user = [
     `Customer: ${input.reviewerName ?? "a customer"}`,

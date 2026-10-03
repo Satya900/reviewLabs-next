@@ -3,8 +3,10 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { getOwnerOutletConnection } from "@/lib/replies";
+import { getOutletSeoKeywords } from "@/lib/reply-seo";
 import { hasGoogleEnv } from "@/lib/google";
 import { ReplySettingsForm } from "@/components/dashboard/reply-settings-form";
+import { ReplySeoForm } from "@/components/dashboard/reply-seo-form";
 import { SyncGoogleButton } from "@/components/dashboard/sync-google-button";
 
 export default async function SettingsPage({
@@ -14,6 +16,7 @@ export default async function SettingsPage({
 }) {
   const { connected, error } = await searchParams;
   const data = await getOwnerOutletConnection();
+  const seoKeywords = data ? await getOutletSeoKeywords(data.outlet.id) : [];
 
   return (
     <div className="max-w-xl">
@@ -67,6 +70,15 @@ export default async function SettingsPage({
             initialLanguage={data.settings?.default_language ?? "en"}
             initialAutoReply={data.settings?.auto_reply_5star_no_text ?? true}
           />
+        ) : (
+          <p className="text-sm text-wise-mute">Connect Supabase and sign in to manage this.</p>
+        )}
+      </Card>
+
+      <Card className="mt-4 p-6">
+        <p className="mb-4 font-semibold text-wise-ink">Reply SEO keywords</p>
+        {data ? (
+          <ReplySeoForm outletId={data.outlet.id} initialKeywords={seoKeywords} />
         ) : (
           <p className="text-sm text-wise-mute">Connect Supabase and sign in to manage this.</p>
         )}

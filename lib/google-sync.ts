@@ -118,6 +118,16 @@ export async function syncOutletReviews(outletId: string): Promise<{ synced: num
       updated_at: new Date().toISOString(),
     };
 
+  // Reply SEO add-on (lib/reply-seo.ts): read directly here, same inline
+  // style as settingsRow above, rather than through the owner-scoped
+  // lib/reply-seo.ts getter — this runs on the service-role client in a
+  // cron context with no owner session.
+  const { data: seoKeywordRows } = await supabase
+    .from("reply_seo_keywords")
+    .select("keyword")
+    .eq("outlet_id", outletId);
+  const seoKeywords = (seoKeywordRows ?? []).map((k) => k.keyword);
+
   const accessToken = await getValidAccessToken(connection);
   const [accountId] = connection.google_location_id.split("/locations/")[0] === connection.google_location_id
     ? [connection.google_location_id]
@@ -191,6 +201,7 @@ export async function syncOutletReviews(outletId: string): Promise<{ synced: num
           reviewText: review.comment ?? null,
           fixNote: groundingTicket?.fix_note ?? null,
           language: settings.default_language,
+          seoKeywords,
         });
 
         if (draft) {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { computeAgencyMonthlyTotal, formatPrice, plans } from "./plans";
+import { computeAgencyMonthlyTotal, computeReplySeoMonthlyPrice, formatPrice, plans, replySeoAddOn } from "./plans";
 
 const agencyPlan = plans.find((p) => p.id === "agency")!;
 
@@ -53,5 +53,21 @@ describe("computeAgencyMonthlyTotal", () => {
     for (const n of [1, 5, 25, 50]) {
       expect(computeAgencyMonthlyTotal(n, agencyPlan)).toBe(599 * n);
     }
+  });
+});
+
+describe("computeReplySeoMonthlyPrice", () => {
+  it("is 0 for zero keywords", () => {
+    expect(computeReplySeoMonthlyPrice(0)).toBe(0);
+  });
+
+  it("matches the PRD's ₹50/keyword/month rate", () => {
+    expect(replySeoAddOn.pricePerKeywordPerMonth).toBe(50);
+    expect(computeReplySeoMonthlyPrice(1)).toBe(50);
+    expect(computeReplySeoMonthlyPrice(5)).toBe(250);
+  });
+
+  it("clamps a negative count to 0 rather than returning a negative price", () => {
+    expect(computeReplySeoMonthlyPrice(-3)).toBe(0);
   });
 });

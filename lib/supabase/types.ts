@@ -161,6 +161,13 @@ export type AuditLead = {
   created_at: string;
 };
 
+export type ReplySeoKeyword = {
+  id: string;
+  outlet_id: string;
+  keyword: string;
+  created_at: string;
+};
+
 type TableDef<Row> = {
   Row: Row;
   Insert: Partial<Row>;
@@ -193,6 +200,7 @@ export type Database = {
       google_reviews: TableDef<GoogleReview>;
       reply_drafts: TableDef<ReplyDraft>;
       audit_leads: TableDef<AuditLead>;
+      reply_seo_keywords: TableDef<ReplySeoKeyword>;
     };
     Views: {
       businesses_public: ViewDef<BusinessPublic>;

@@ -88,3 +88,12 @@ export function computeAgencyMonthlyTotal(totalOutlets: number, plan: PlanDefini
   if (totalOutlets <= 0) return 0;
   return plan.priceFirstOutlet + Math.max(0, totalOutlets - 1) * plan.priceExtraOutlet;
 }
+
+// Reply SEO add-on (PHASES.md Phase 3) total, from the keyword count a
+// lib/reply-seo.ts caller already has in hand. Lives here, not in
+// lib/reply-seo.ts, specifically so client components (the keyword-editor
+// form) can import this pure function without pulling in that file's
+// server-only Supabase data fetcher (next/headers) into the client bundle.
+export function computeReplySeoMonthlyPrice(keywordCount: number): number {
+  return Math.max(0, keywordCount) * replySeoAddOn.pricePerKeywordPerMonth;
+}
